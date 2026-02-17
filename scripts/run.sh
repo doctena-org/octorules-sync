@@ -44,7 +44,8 @@ fi
 
 if [ "${_doit}" = "--doit" ]; then
   # --- Apply mode: octorules sync --doit ---
-  _cmd=(octorules sync --doit --config="${_config_path}")
+  # Global flags (--config, --zone, --phase) must come before the subcommand.
+  _cmd=(octorules --config="${_config_path}" "${_zone_flags[@]}" "${_phase_flags[@]}" sync --doit)
 
   if [ "${_force}" = "Yes" ]; then
     echo "INFO: Running octorules sync with --force"
@@ -55,8 +56,6 @@ if [ "${_doit}" = "--doit" ]; then
     echo "INFO: Using checksum: ${_checksum}"
     _cmd+=(--checksum "${_checksum}")
   fi
-
-  _cmd+=("${_zone_flags[@]}" "${_phase_flags[@]}")
 
   echo "INFO: Running octorules sync --doit"
   "${_cmd[@]}" 1>"${_planfile}" 2>"${_logfile}"
@@ -85,8 +84,8 @@ if [ "${_doit}" = "--doit" ]; then
   fi
 else
   # --- Plan mode: octorules plan ---
-  _cmd=(octorules plan --config="${_config_path}" --checksum)
-  _cmd+=("${_zone_flags[@]}" "${_phase_flags[@]}")
+  # Global flags (--config, --zone, --phase) must come before the subcommand.
+  _cmd=(octorules --config="${_config_path}" "${_zone_flags[@]}" "${_phase_flags[@]}" plan --checksum)
 
   echo "INFO: Running octorules plan"
   "${_cmd[@]}" 1>"${_planfile}" 2>"${_logfile}"

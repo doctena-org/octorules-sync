@@ -53,6 +53,20 @@ teardown() {
   [[ "${args}" != *"--format"* ]]
 }
 
+@test "plan mode: global flags come before subcommand" {
+  DOIT="" ZONES="a.com" PHASES="cache_rules" run bash "${SCRIPT_DIR}/run.sh"
+  args="$(cat "${MOCK_ARGS_FILE}")"
+  # --config, --zone, --phase must appear before "plan"
+  [[ "${args}" =~ --config=config\.yaml.*--zone.*--phase.*plan ]]
+}
+
+@test "sync mode: global flags come before subcommand" {
+  DOIT="--doit" ZONES="a.com" PHASES="cache_rules" run bash "${SCRIPT_DIR}/run.sh"
+  args="$(cat "${MOCK_ARGS_FILE}")"
+  # --config, --zone, --phase must appear before "sync"
+  [[ "${args}" =~ --config=config\.yaml.*--zone.*--phase.*sync ]]
+}
+
 @test "plan mode exit 0: succeeds with no changes message" {
   echo "0" > "${MOCK_EXIT_FILE}"
   run bash "${SCRIPT_DIR}/run.sh"
