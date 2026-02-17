@@ -1,0 +1,24 @@
+---
+name: Update Major Version Tag
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  update-major-tag:
+    name: Update Major Version Tag
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Update major version tag
+        run: |
+          tag="${{ github.event.release.tag_name }}"
+          major="${tag%%.*}"
+          git tag -f "${major}" "${tag}"
+          git push -f origin "${major}"

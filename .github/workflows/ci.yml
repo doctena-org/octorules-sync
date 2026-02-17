@@ -1,0 +1,36 @@
+---
+name: CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Lint YAML files
+        run: yamllint --no-warnings ./
+
+      - name: Lint shell scripts
+        run: shellcheck ./scripts/*.sh
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install BATS
+        uses: bats-core/bats-action@3.0.0
+
+      - name: Run tests
+        run: bats tests/

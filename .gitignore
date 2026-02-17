@@ -1,0 +1,20 @@
+# octorules output
+*.log
+*.plan
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# Python (from octorules installs in CI)
+__pycache__/
+*.pyc
+.venv/
+venv/
