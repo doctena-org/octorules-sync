@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Security
+
+- Pin 3rd-party GitHub Actions to commit SHAs (Aikido finding)
+
+### Changed
+
+- Bump `bats-core/bats-action` from 3.0.0 to 4.0.0
+
 ## [1.0.0] - 2026-02-17
 
 ### Added
