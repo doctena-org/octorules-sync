@@ -10,6 +10,8 @@
 # - ZONES
 
 set -euo pipefail
+# shellcheck source=scripts/lib.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 if [ "${LINT}" != "Yes" ]; then
   echo "SKIP: \$LINT is not 'Yes'."
@@ -19,7 +21,7 @@ fi
 
 _lint_resultfile="${GITHUB_WORKSPACE}/octorules-sync.lint"
 _lint_logfile="${GITHUB_WORKSPACE}/octorules-sync.lint.log"
-_delim="OCTORULES_LINT_EOF_$(head -c 16 /dev/urandom | od -An -tx1 | tr -d ' \n')"
+_delim="$(random_delim OCTORULES_LINT_EOF)"
 rm -f "${_lint_resultfile}" "${_lint_logfile}"
 
 # Build repeated flags from space-separated inputs.

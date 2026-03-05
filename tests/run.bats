@@ -105,6 +105,12 @@ teardown() {
   [[ "${args}" == *"--force"* ]]
 }
 
+@test "sync mode without --force: omits --force when FORCE=No" {
+  DOIT="--doit" FORCE="No" run bash "${SCRIPT_DIR}/run.sh"
+  args="$(cat "${MOCK_ARGS_FILE}")"
+  [[ "${args}" != *"--force"* ]]
+}
+
 @test "sync mode with checksum: includes --checksum HASH" {
   DOIT="--doit" CHECKSUM="abc123" run bash "${SCRIPT_DIR}/run.sh"
   args="$(cat "${MOCK_ARGS_FILE}")"
@@ -196,4 +202,34 @@ MOCK
   DOIT="--doit" CHECKSUM="" run bash "${SCRIPT_DIR}/run.sh"
   args="$(cat "${MOCK_ARGS_FILE}")"
   [[ "${args}" != *"--checksum"* ]]
+}
+
+# ---------- Empty output ----------
+
+@test "empty output: plan heredoc handles empty plan file" {
+  # Mock produces no stdout (empty plan file).
+  cat > "${MOCK_DIR}/octorules" <<'MOCK'
+#!/bin/bash
+echo "$@" > "${MOCK_ARGS_FILE}"
+exit 0
+MOCK
+  chmod +x "${MOCK_DIR}/octorules"
+
+  run bash "${SCRIPT_DIR}/run.sh"
+  [ "${status}" -eq 0 ]
+  # GITHUB_OUTPUT should still contain plan heredoc (even if empty content).
+  grep -q "plan<<OCTORULES_EOF_" "${GITHUB_OUTPUT}"
+}
+
+@test "empty output: log heredoc handles empty log file" {
+  cat > "${MOCK_DIR}/octorules" <<'MOCK'
+#!/bin/bash
+echo "$@" > "${MOCK_ARGS_FILE}"
+exit 0
+MOCK
+  chmod +x "${MOCK_DIR}/octorules"
+
+  run bash "${SCRIPT_DIR}/run.sh"
+  [ "${status}" -eq 0 ]
+  grep -q "log<<OCTORULES_EOF_" "${GITHUB_OUTPUT}"
 }
