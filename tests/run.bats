@@ -141,12 +141,12 @@ teardown() {
 
 @test "outputs: GITHUB_OUTPUT contains plan heredoc" {
   run bash "${SCRIPT_DIR}/run.sh"
-  grep -q "plan<<OCTORULES_EOF" "${GITHUB_OUTPUT}"
+  grep -q "plan<<OCTORULES_EOF_" "${GITHUB_OUTPUT}"
 }
 
 @test "outputs: GITHUB_OUTPUT contains log heredoc" {
   run bash "${SCRIPT_DIR}/run.sh"
-  grep -q "log<<OCTORULES_EOF" "${GITHUB_OUTPUT}"
+  grep -q "log<<OCTORULES_EOF_" "${GITHUB_OUTPUT}"
 }
 
 # ---------- Failure output ----------

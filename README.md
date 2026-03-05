@@ -29,8 +29,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install octorules
-      - uses: doctena-org/octorules-sync@main
+      - run: pip install 'octorules>=0.10,<2'
+      - uses: doctena-org/octorules-sync@v1
         with:
           config_path: config.yaml
           doit: '--doit'
@@ -98,6 +98,24 @@ Space separated list of zones to sync, leave empty to sync all zones in the conf
 
 Default `""` (empty string, all zones).
 
+### `lint`
+
+Run `octorules lint` before plan/sync? Set `"Yes"` to enable. When enabled, the linter runs before the plan/sync step. Lint errors (exit code 1) block sync mode from applying changes; warnings do not.
+
+Default `"No"`.
+
+### `lint_severity`
+
+Minimum lint severity to report: `"error"`, `"warning"`, or `"info"`.
+
+Default `"warning"`.
+
+### `lint_plan`
+
+Cloudflare plan tier override for lint entitlement checks (e.g. `"free"`, `"pro"`, `"business"`, `"enterprise"`). When empty (the default), the plan tier is auto-detected from the Cloudflare API per zone.
+
+Default `""` (auto-detect).
+
 ### `add_pr_comment`
 
 Add plan as a comment, when triggered by a pull request? Set `"Yes"` to enable.
@@ -110,7 +128,7 @@ Default `"No"`.
 
 Provide a token to use, if you set `add_pr_comment` to `"Yes"`.
 
-Default `"Not set"`.
+Default `""` (empty string, must be provided when `add_pr_comment` is `"Yes"`).
 
 ## Outputs
 
@@ -146,6 +164,25 @@ Example usage in a subsequent step:
 
 SHA-256 plan checksum for drift protection (plan mode only). Pass this value to a subsequent sync step via the `checksum` input to ensure the state hasn't drifted between plan and apply. Empty when running in sync mode or if no checksum was emitted.
 
+### `lint_exit_code`
+
+Exit code from `octorules lint`: `0` = clean, `1` = errors, `2` = warnings only, empty = lint disabled.
+
+### `lint_results`
+
+Lint results text. Empty when lint is disabled or clean.
+
+## Linting
+
+When `lint` is set to `"Yes"`, the action runs `octorules lint --exit-code` before the plan/sync step. Lint results are included in PR comments (when enabled) and exposed via the `lint_exit_code` and `lint_results` outputs.
+
+- **Plan mode**: lint errors are reported but the plan still runs, so you can see both lint issues and planned changes. The action fails at the end if lint found errors.
+- **Sync mode**: lint errors **block** the sync step entirely — changes are not applied. Warnings do not block sync.
+
+### Wirefilter support
+
+When using lint, installing `octorules[wirefilter]` is **strongly recommended**. Without it, expression validation uses a regex-based fallback that can only extract field and function names. With wirefilter installed, expressions are parsed by Cloudflare's real [wirefilter](https://github.com/cloudflare/wirefilter) engine, enabling detection of syntax errors, unknown fields, type mismatches, and invalid operators that the regex fallback cannot catch.
+
 ## Pull request plan comments
 
 To have this action post the plan as a PR comment, configure your workflow to:
@@ -171,10 +208,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install octorules
-      - uses: doctena-org/octorules-sync@main
+      - run: pip install 'octorules[wirefilter]>=0.11,<2'
+      - uses: doctena-org/octorules-sync@v1
         with:
           config_path: config.yaml
+          lint: 'Yes'
           add_pr_comment: 'Yes'
           pr_comment_token: '${{ github.token }}'
         env:
@@ -210,11 +248,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install octorules
-      - uses: doctena-org/octorules-sync@main
+      - run: pip install 'octorules[wirefilter]>=0.11,<2'
+      - uses: doctena-org/octorules-sync@v1
         id: octorules
         with:
           config_path: config.yaml
+          lint: 'Yes'
           add_pr_comment: 'Yes'
           pr_comment_token: '${{ github.token }}'
         env:
@@ -229,8 +268,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install octorules
-      - uses: doctena-org/octorules-sync@main
+      - run: pip install 'octorules>=0.10,<2'
+      - uses: doctena-org/octorules-sync@v1
         with:
           config_path: config.yaml
           doit: '--doit'
@@ -243,7 +282,7 @@ jobs:
 To sync only specific rule phases, use the `phases` input:
 
 ```yaml
-- uses: doctena-org/octorules-sync@main
+- uses: doctena-org/octorules-sync@v1
   with:
     config_path: config.yaml
     doit: '--doit'
@@ -269,8 +308,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install octorules
-      - uses: doctena-org/octorules-sync@main
+      - run: pip install 'octorules>=0.10,<2'
+      - uses: doctena-org/octorules-sync@v1
         id: plan
         with:
           config_path: config.yaml
@@ -286,8 +325,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install octorules
-      - uses: doctena-org/octorules-sync@main
+      - run: pip install 'octorules>=0.10,<2'
+      - uses: doctena-org/octorules-sync@v1
         with:
           config_path: config.yaml
           doit: '--doit'
@@ -336,7 +375,7 @@ Contributions are welcome!
 
 - Shell scripts follow [ShellCheck](https://www.shellcheck.net/) recommendations.
 - YAML files must pass `yamllint --no-warnings`.
-- Use `set -o pipefail` in new scripts.
+- Use `set -euo pipefail` in new scripts.
 - Prefer arrays for command construction (see `scripts/run.sh` for the pattern).
 
 ### Releases

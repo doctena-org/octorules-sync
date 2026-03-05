@@ -1,6 +1,7 @@
 # octorules output
 *.log
 *.plan
+*.lint
 
 # OS
 .DS_Store

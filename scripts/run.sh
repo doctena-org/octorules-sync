@@ -9,7 +9,7 @@
 # - PHASES
 # - ZONES
 
-set -o pipefail
+set -euo pipefail
 
 _config_path="${CONFIG_PATH}"
 _doit="${DOIT}"
@@ -21,6 +21,7 @@ _zones="${ZONES}"
 # Output files.
 _logfile="${GITHUB_WORKSPACE}/octorules-sync.log"
 _planfile="${GITHUB_WORKSPACE}/octorules-sync.plan"
+_delim="OCTORULES_EOF_$(head -c 16 /dev/urandom | od -An -tx1 | tr -d ' \n')"
 
 echo "INFO: Cleaning up plan and log files if they already exist"
 rm -f "${_logfile}" "${_planfile}"
@@ -45,7 +46,10 @@ fi
 if [ "${_doit}" = "--doit" ]; then
   # --- Apply mode: octorules sync --doit ---
   # Global flags (--config, --zone, --phase) must come before the subcommand.
-  _cmd=(octorules --config="${_config_path}" "${_zone_flags[@]}" "${_phase_flags[@]}" sync --doit)
+  _cmd=(octorules --config="${_config_path}")
+  [ ${#_zone_flags[@]} -gt 0 ] && _cmd+=("${_zone_flags[@]}")
+  [ ${#_phase_flags[@]} -gt 0 ] && _cmd+=("${_phase_flags[@]}")
+  _cmd+=(sync --doit)
 
   if [ "${_force}" = "Yes" ]; then
     echo "INFO: Running octorules sync with --force"
@@ -58,8 +62,8 @@ if [ "${_doit}" = "--doit" ]; then
   fi
 
   echo "INFO: Running octorules sync --doit"
-  "${_cmd[@]}" 1>"${_planfile}" 2>"${_logfile}"
-  _exit_code=$?
+  _exit_code=0
+  "${_cmd[@]}" 1>"${_planfile}" 2>"${_logfile}" || _exit_code=$?
 
   if [ "${_exit_code}" -ne 0 ]; then
     echo "FAIL: octorules sync exited with code ${_exit_code}."
@@ -69,27 +73,29 @@ if [ "${_doit}" = "--doit" ]; then
       echo "FAIL: Plan output (${_planfile}):"
       cat "${_planfile}"
     fi
-    echo "${_exit_code}" >> "${GITHUB_OUTPUT}"
     # Still set outputs before exiting so downstream steps can inspect them.
     {
       echo "exit_code=${_exit_code}"
-      echo 'log<<OCTORULES_EOF'
+      echo "log<<${_delim}"
       cat "${_logfile}"
-      echo 'OCTORULES_EOF'
-      echo 'plan<<OCTORULES_EOF'
+      echo "${_delim}"
+      echo "plan<<${_delim}"
       cat "${_planfile}"
-      echo 'OCTORULES_EOF'
+      echo "${_delim}"
     } >> "${GITHUB_OUTPUT}"
     exit 1
   fi
 else
   # --- Plan mode: octorules plan ---
   # Global flags (--config, --zone, --phase) must come before the subcommand.
-  _cmd=(octorules --config="${_config_path}" "${_zone_flags[@]}" "${_phase_flags[@]}" plan --checksum)
+  _cmd=(octorules --config="${_config_path}")
+  [ ${#_zone_flags[@]} -gt 0 ] && _cmd+=("${_zone_flags[@]}")
+  [ ${#_phase_flags[@]} -gt 0 ] && _cmd+=("${_phase_flags[@]}")
+  _cmd+=(plan --checksum)
 
   echo "INFO: Running octorules plan"
-  "${_cmd[@]}" 1>"${_planfile}" 2>"${_logfile}"
-  _exit_code=$?
+  _exit_code=0
+  "${_cmd[@]}" 1>"${_planfile}" 2>"${_logfile}" || _exit_code=$?
 
   if [ "${_exit_code}" -eq 0 ]; then
     echo "INFO: octorules plan completed. No changes detected."
@@ -105,12 +111,12 @@ else
     fi
     {
       echo "exit_code=${_exit_code}"
-      echo 'log<<OCTORULES_EOF'
+      echo "log<<${_delim}"
       cat "${_logfile}"
-      echo 'OCTORULES_EOF'
-      echo 'plan<<OCTORULES_EOF'
+      echo "${_delim}"
+      echo "plan<<${_delim}"
       cat "${_planfile}"
-      echo 'OCTORULES_EOF'
+      echo "${_delim}"
     } >> "${GITHUB_OUTPUT}"
     exit 1
   fi
@@ -128,10 +134,10 @@ fi
 {
   echo "exit_code=${_exit_code}"
   echo "checksum=${_checksum_value}"
-  echo 'log<<OCTORULES_EOF'
+  echo "log<<${_delim}"
   cat "${_logfile}"
-  echo 'OCTORULES_EOF'
-  echo 'plan<<OCTORULES_EOF'
+  echo "${_delim}"
+  echo "plan<<${_delim}"
   cat "${_planfile}"
-  echo 'OCTORULES_EOF'
+  echo "${_delim}"
 } >> "${GITHUB_OUTPUT}"

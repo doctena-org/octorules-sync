@@ -69,6 +69,7 @@ teardown() {
 @test "fail when PR_COMMENT_TOKEN is 'Not set'" {
   PR_COMMENT_TOKEN="Not set" run bash "${SCRIPT_DIR}/comment.sh"
   [ "${status}" -eq 1 ]
+  [[ "${output}" == *"FAIL"* ]]
 }
 
 @test "skip when PR_NUMBER empty" {
@@ -113,4 +114,52 @@ teardown() {
   [ "${status}" -eq 0 ]
   gh_calls="$(cat "${GH_CALLS_FILE}")"
   [[ "${gh_calls}" == *"Some plan content here"* ]]
+}
+
+# ---------- Lint results in comment ----------
+
+@test "lint file with content: comment body contains Lint Results section" {
+  echo "W001: some warning" > "${GITHUB_WORKSPACE}/octorules-sync.lint"
+  run bash "${SCRIPT_DIR}/comment.sh"
+  [ "${status}" -eq 0 ]
+  gh_calls="$(cat "${GH_CALLS_FILE}")"
+  [[ "${gh_calls}" == *"Lint Results"* ]]
+  [[ "${gh_calls}" == *"W001: some warning"* ]]
+}
+
+@test "lint file empty: comment body omits lint section" {
+  touch "${GITHUB_WORKSPACE}/octorules-sync.lint"
+  run bash "${SCRIPT_DIR}/comment.sh"
+  [ "${status}" -eq 0 ]
+  gh_calls="$(cat "${GH_CALLS_FILE}")"
+  [[ "${gh_calls}" != *"Lint Results"* ]]
+}
+
+@test "lint file missing: comment body omits lint section" {
+  rm -f "${GITHUB_WORKSPACE}/octorules-sync.lint"
+  run bash "${SCRIPT_DIR}/comment.sh"
+  [ "${status}" -eq 0 ]
+  gh_calls="$(cat "${GH_CALLS_FILE}")"
+  [[ "${gh_calls}" != *"Lint Results"* ]]
+}
+
+@test "both lint and plan content: comment contains both" {
+  echo "E001: some error" > "${GITHUB_WORKSPACE}/octorules-sync.lint"
+  echo "Plan: 3 changes" > "${GITHUB_WORKSPACE}/octorules-sync.plan"
+  run bash "${SCRIPT_DIR}/comment.sh"
+  [ "${status}" -eq 0 ]
+  gh_calls="$(cat "${GH_CALLS_FILE}")"
+  [[ "${gh_calls}" == *"Lint Results"* ]]
+  [[ "${gh_calls}" == *"E001: some error"* ]]
+  [[ "${gh_calls}" == *"Plan: 3 changes"* ]]
+}
+
+# ---------- Missing plan file ----------
+
+@test "missing plan file: comment shows fallback message" {
+  rm -f "${GITHUB_WORKSPACE}/octorules-sync.plan"
+  run bash "${SCRIPT_DIR}/comment.sh"
+  [ "${status}" -eq 0 ]
+  gh_calls="$(cat "${GH_CALLS_FILE}")"
+  [[ "${gh_calls}" == *"No plan output"* ]]
 }

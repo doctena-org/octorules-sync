@@ -6,7 +6,7 @@ inputs:
   config_path:
     description: 'Path, relative to your repository root, of the config file
                   you would like octorules to use.'
-    required: true
+    required: false
     default: 'config.yaml'
   doit:
     description: 'Really do it? Set "--doit" to apply changes; Any other
@@ -32,14 +32,27 @@ inputs:
                   all zones in the config file.'
     required: false
     default: ''
+  lint:
+    description: 'Run octorules lint before plan/sync? Set "Yes" to enable.'
+    required: false
+    default: 'No'
+  lint_severity:
+    description: 'Minimum lint severity: "error", "warning", or "info".'
+    required: false
+    default: 'warning'
+  lint_plan:
+    description: 'Cloudflare plan tier override for lint. When empty, auto-detected
+                  from the Cloudflare API per zone.'
+    required: false
+    default: ''
   add_pr_comment:
     description: 'Add plan as a comment, when triggered by a pull request?'
-    required: true
+    required: false
     default: 'No'
   pr_comment_token:
     description: 'Provide a token to use, if you set add_pr_comment to Yes.'
-    required: true
-    default: 'Not set'
+    required: false
+    default: ''
 outputs:
   log:
     description: '`octorules` command output'
@@ -55,12 +68,34 @@ outputs:
   checksum:
     description: 'SHA-256 plan checksum for drift protection (plan mode only).'
     value: ${{ steps.run.outputs.checksum }}
+  lint_exit_code:
+    description: 'Exit code from octorules lint: 0 = clean, 1 = errors,
+                  2 = warnings only, empty = lint disabled.'
+    value: ${{ steps.lint.outputs.lint_exit_code }}
+  lint_results:
+    description: 'Lint results text. Empty when disabled or clean.'
+    value: ${{ steps.lint.outputs.lint_results }}
 
 runs:
   using: 'composite'
   steps:
+    - name: Lint octorules config
+      id: lint
+      env:
+        LINT: ${{ inputs.lint }}
+        CONFIG_PATH: ${{ inputs.config_path }}
+        LINT_SEVERITY: ${{ inputs.lint_severity }}
+        LINT_PLAN: ${{ inputs.lint_plan }}
+        PHASES: ${{ inputs.phases }}
+        ZONES: ${{ inputs.zones }}
+      run: ${GITHUB_ACTION_PATH}/scripts/lint.sh
+      shell: bash
+      working-directory: ${{ github.workspace }}
     - name: Run octorules
       id: run
+      if: >-
+        inputs.doit != '--doit'
+        || steps.lint.outputs.lint_exit_code != '1'
       env:
         CONFIG_PATH: ${{ inputs.config_path }}
         DOIT: ${{ inputs.doit }}
@@ -81,6 +116,12 @@ runs:
       run: ${GITHUB_ACTION_PATH}/scripts/comment.sh
       shell: bash
       working-directory: ${{ github.workspace }}
+    - name: Fail on lint errors
+      if: steps.lint.outputs.lint_exit_code == '1'
+      run: |
+        echo "FAIL: octorules lint found errors. See lint results above."
+        exit 1
+      shell: bash
 branding:
   icon: 'shield'
   color: 'orange'
