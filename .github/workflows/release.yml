@@ -21,4 +21,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
-        run: gh release create "${TAG}" --draft --generate-notes
+        run: gh release create "${TAG}" --generate-notes
