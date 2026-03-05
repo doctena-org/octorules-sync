@@ -380,6 +380,6 @@ Contributions are welcome!
 
 ### Releases
 
-Releases are automated. Push a semver tag (`v1.2.3`) to create a draft GitHub Release. Publishing the release updates the major version tag (`v1`) automatically.
+Releases are automated. Push a semver tag (`v1.2.3`) to create a GitHub Release. Publishing the release updates the major version tag (`v1`) automatically.
 
 Update `CHANGELOG.md` with your changes under the `[Unreleased]` section before tagging.
