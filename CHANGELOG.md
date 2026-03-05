@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.1.1] - 2026-03-05
+
+### Fixed
+
+- Lint output `[WARNING]` and `[ERROR]` tags mangled in GitHub Actions logs
+  (Actions interpreted them as workflow commands)
+
 ## [1.1.0] - 2026-03-05
 
 ### Added
