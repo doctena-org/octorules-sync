@@ -10,6 +10,8 @@
 # - ZONES
 
 set -euo pipefail
+# shellcheck source=scripts/lib.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 _config_path="${CONFIG_PATH}"
 _doit="${DOIT}"
@@ -21,7 +23,7 @@ _zones="${ZONES}"
 # Output files.
 _logfile="${GITHUB_WORKSPACE}/octorules-sync.log"
 _planfile="${GITHUB_WORKSPACE}/octorules-sync.plan"
-_delim="OCTORULES_EOF_$(head -c 16 /dev/urandom | od -An -tx1 | tr -d ' \n')"
+_delim="$(random_delim OCTORULES_EOF)"
 
 echo "INFO: Cleaning up plan and log files if they already exist"
 rm -f "${_logfile}" "${_planfile}"

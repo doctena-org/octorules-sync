@@ -1,0 +1,70 @@
+---
+name: Integration
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  integration:
+    name: End-to-end action test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Create mock octorules binary
+        run: |
+          mkdir -p "${{ runner.temp }}/bin"
+          cat > "${{ runner.temp }}/bin/octorules" <<'MOCK'
+          #!/bin/bash
+          # Mock octorules for integration testing.
+          # plan mode: emit a checksum on stderr, plan on stdout.
+          if [[ "$*" == *"plan"* ]]; then
+            echo "checksum=abc123def456" >&2
+            echo "No changes detected."
+            exit 0
+          fi
+          # lint mode: clean exit.
+          if [[ "$*" == *"lint"* ]]; then
+            exit 0
+          fi
+          exit 0
+          MOCK
+          chmod +x "${{ runner.temp }}/bin/octorules"
+          echo "${{ runner.temp }}/bin" >> "$GITHUB_PATH"
+
+      - name: Create minimal config
+        run: |
+          cat > config.yaml <<'EOF'
+          providers:
+            cloudflare:
+              token: env/CLOUDFLARE_API_TOKEN
+            rules:
+              directory: ./rules
+          zones:
+            test.example.com:
+              sources:
+                - rules
+          EOF
+          mkdir -p rules
+          echo '---' > rules/test.example.com.yaml
+
+      - name: Run action in plan mode
+        id: octorules
+        uses: ./
+        with:
+          config_path: config.yaml
+        env:
+          CLOUDFLARE_API_TOKEN: fake-token-for-test
+
+      - name: Verify outputs exist
+        run: |
+          echo "exit_code=${{ steps.octorules.outputs.exit_code }}"
+          echo "checksum=${{ steps.octorules.outputs.checksum }}"
+          test -n "${{ steps.octorules.outputs.exit_code }}"
+          test -f "${GITHUB_WORKSPACE}/octorules-sync.plan"
+          test -f "${GITHUB_WORKSPACE}/octorules-sync.log"

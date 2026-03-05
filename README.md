@@ -128,6 +128,8 @@ Default `"No"`.
 
 Provide a token to use, if you set `add_pr_comment` to `"Yes"`.
 
+The default `github.token` has sufficient permissions for same-repo PRs. For cross-repo or fork PRs, use a token with `pull_requests: write` scope.
+
 Default `""` (empty string, must be provided when `add_pr_comment` is `"Yes"`).
 
 ## Outputs

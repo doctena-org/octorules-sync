@@ -22,6 +22,13 @@ setup() {
   export GH_LIST_RESPONSE_FILE="${MOCK_DIR}/gh.list_response"
   echo "" > "${GH_LIST_RESPONSE_FILE}"
 
+  # No-op sleep mock to avoid real delays during retry.
+  cat > "${MOCK_DIR}/sleep" <<'MOCK'
+#!/bin/bash
+exit 0
+MOCK
+  chmod +x "${MOCK_DIR}/sleep"
+
   # Create mock gh.
   cat > "${MOCK_DIR}/gh" <<'MOCK'
 #!/bin/bash
@@ -162,4 +169,80 @@ teardown() {
   [ "${status}" -eq 0 ]
   gh_calls="$(cat "${GH_CALLS_FILE}")"
   [[ "${gh_calls}" == *"No plan output"* ]]
+}
+
+# ---------- Retry behavior ----------
+
+@test "comment lookup retries on transient gh api failure" {
+  # Counter file tracks list call attempts.
+  local counter_file="${MOCK_DIR}/list_counter"
+  echo "0" > "${counter_file}"
+
+  # gh mock: first list call fails, second succeeds with no existing comment.
+  cat > "${MOCK_DIR}/gh" <<MOCK
+#!/bin/bash
+echo "\$@" >> "${GH_CALLS_FILE}"
+if [[ "\$*" == *"--paginate"* ]]; then
+  count=\$(cat "${counter_file}")
+  count=\$((count + 1))
+  echo "\${count}" > "${counter_file}"
+  if [ "\${count}" -lt 2 ]; then
+    exit 1
+  fi
+  cat "${GH_LIST_RESPONSE_FILE}"
+  exit 0
+fi
+exit 0
+MOCK
+  chmod +x "${MOCK_DIR}/gh"
+
+  echo "" > "${GH_LIST_RESPONSE_FILE}"
+  run bash "${SCRIPT_DIR}/comment.sh"
+  [ "${status}" -eq 0 ]
+  # Should still create a new comment after successful retry.
+  gh_calls="$(cat "${GH_CALLS_FILE}")"
+  [[ "${gh_calls}" == *"POST"* ]]
+}
+
+# ---------- Comment body edge cases ----------
+
+@test "comment body handles backticks and code fences in plan" {
+  cat > "${GITHUB_WORKSPACE}/octorules-sync.plan" <<'PLAN'
+Here is some code:
+\`\`\`yaml
+key: value
+\`\`\`
+And an inline \`backtick\`.
+PLAN
+  run bash "${SCRIPT_DIR}/comment.sh"
+  [ "${status}" -eq 0 ]
+  gh_calls="$(cat "${GH_CALLS_FILE}")"
+  [[ "${gh_calls}" == *"key: value"* ]]
+}
+
+@test "git log failure: sha falls back to unknown" {
+  # Replace git mock with one that fails.
+  cat > "${MOCK_DIR}/git" <<'MOCK'
+#!/bin/bash
+exit 128
+MOCK
+  chmod +x "${MOCK_DIR}/git"
+
+  run bash "${SCRIPT_DIR}/comment.sh"
+  [ "${status}" -eq 0 ]
+  gh_calls="$(cat "${GH_CALLS_FILE}")"
+  [[ "${gh_calls}" == *"unknown"* ]]
+}
+
+@test "comment body handles markdown table in plan" {
+  cat > "${GITHUB_WORKSPACE}/octorules-sync.plan" <<'PLAN'
+| Zone     | Phase       | Action |
+|----------|-------------|--------|
+| a.com    | cache_rules | create |
+PLAN
+  run bash "${SCRIPT_DIR}/comment.sh"
+  [ "${status}" -eq 0 ]
+  gh_calls="$(cat "${GH_CALLS_FILE}")"
+  [[ "${gh_calls}" == *"a.com"* ]]
+  [[ "${gh_calls}" == *"cache_rules"* ]]
 }

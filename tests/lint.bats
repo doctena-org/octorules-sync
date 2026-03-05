@@ -187,3 +187,20 @@ MOCK
   # File should exist but not contain "stale" (it was recreated by the mock).
   ! grep -q "stale" "${GITHUB_WORKSPACE}/octorules-sync.lint"
 }
+
+# ---------- Empty output ----------
+
+@test "empty output: lint_results heredoc handles empty lint output" {
+  # Mock produces no stdout (empty lint results).
+  cat > "${MOCK_DIR}/octorules" <<'MOCK'
+#!/bin/bash
+echo "$@" > "${MOCK_ARGS_FILE}"
+exit 0
+MOCK
+  chmod +x "${MOCK_DIR}/octorules"
+
+  run bash "${SCRIPT_DIR}/lint.sh"
+  [ "${status}" -eq 0 ]
+  # GITHUB_OUTPUT should still contain lint_results heredoc.
+  grep -q "lint_results<<OCTORULES_LINT_EOF_" "${GITHUB_OUTPUT}"
+}

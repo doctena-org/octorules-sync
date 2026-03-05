@@ -108,6 +108,7 @@ runs:
       working-directory: ${{ github.workspace }}
     - name: Add pull request comment
       id: comment
+      if: ${{ !cancelled() }}
       env:
         ADD_PR_COMMENT: ${{ inputs.add_pr_comment }}
         PR_COMMENT_TOKEN: ${{ inputs.pr_comment_token }}
@@ -117,7 +118,7 @@ runs:
       shell: bash
       working-directory: ${{ github.workspace }}
     - name: Fail on lint errors
-      if: steps.lint.outputs.lint_exit_code == '1'
+      if: ${{ !cancelled() && steps.lint.outputs.lint_exit_code == '1' }}
       run: |
         echo "FAIL: octorules lint found errors. See lint results above."
         exit 1

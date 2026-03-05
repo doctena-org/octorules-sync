@@ -8,6 +8,8 @@
 # - GITHUB_REPOSITORY (owner/repo)
 
 set -euo pipefail
+# shellcheck source=scripts/lib.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 _planfile="${GITHUB_WORKSPACE}/octorules-sync.plan"
 _marker="<!-- octorules-sync-plan -->"
@@ -28,11 +30,13 @@ if [ -z "${PR_NUMBER}" ]; then
   exit 0
 fi
 
+export GH_TOKEN="${PR_COMMENT_TOKEN}"
+
 echo "INFO: \$ADD_PR_COMMENT is 'Yes' and \$PR_COMMENT_TOKEN is set."
 
 # Construct the comment body with a hidden marker for deduplication.
 _lint_resultfile="${GITHUB_WORKSPACE}/octorules-sync.lint"
-_sha="$(git log -1 --format='%h')"
+_sha="$(git log -1 --format='%h' 2>/dev/null)" || _sha="unknown"
 
 _body="${_marker}
 ## Octorules Plan for ${_sha}
@@ -63,17 +67,20 @@ _body+="
 
 # Look for an existing comment with our marker.
 _existing_comment_id=""
-_existing_comment_id="$(
-  GH_TOKEN="${PR_COMMENT_TOKEN}" gh api \
+if ! _existing_comment_id="$(
+  retry 3 2 gh api \
     --paginate \
     "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
     --jq ".[] | select(.body | startswith(\"${_marker}\")) | .id" \
   | head -n 1
-)" || true
+)"; then
+  echo "WARN: Could not fetch existing comments after 3 attempts. A new comment will be created."
+  _existing_comment_id=""
+fi
 
 if [ -n "${_existing_comment_id}" ]; then
   echo "INFO: Updating existing comment ${_existing_comment_id}."
-  GH_TOKEN="${PR_COMMENT_TOKEN}" gh api \
+  gh api \
     --method PATCH \
     "repos/${GITHUB_REPOSITORY}/issues/comments/${_existing_comment_id}" \
     -f body="${_body}" > /dev/null || {
@@ -82,7 +89,7 @@ if [ -n "${_existing_comment_id}" ]; then
   }
 else
   echo "INFO: Creating new PR comment."
-  GH_TOKEN="${PR_COMMENT_TOKEN}" gh api \
+  gh api \
     --method POST \
     "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
     -f body="${_body}" > /dev/null || {

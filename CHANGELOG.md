@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.2.0] - 2026-03-05
+
+### Added
+
+- `random_delim()` function in `lib.sh` — centralizes random heredoc delimiter
+  generation (was duplicated in `run.sh` and `lint.sh`)
+- Integration test workflow (`.github/workflows/integration.yml`) — end-to-end
+  test of the composite action with a mock `octorules` binary
+- Empty output tests for `run.bats` and `lint.bats` — verifies GITHUB_OUTPUT
+  heredoc handles empty plan/lint content correctly
+- `random_delim` tests in `lib.bats`
+- Git log fallback test in `comment.bats`
+- Token scope documentation for `pr_comment_token` in README
+
+### Fixed
+
+- `comment.sh`: `git log` failure (e.g. shallow clone, missing git) now
+  falls back to `_sha="unknown"` instead of aborting
+- `action.yml`: comment and fail-on-lint steps use `!cancelled()` instead of
+  `always()` — prevents running after workflow cancellation
+- `comment.sh`: added `shellcheck source` directive for `lib.sh`
+- `run.sh` and `lint.sh`: source `lib.sh` and use `random_delim()` instead
+  of inline delimiter generation
+
 ## [1.1.2] - 2026-03-05
 
 ### Fixed
