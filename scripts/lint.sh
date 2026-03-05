@@ -51,21 +51,15 @@ echo "INFO: Running octorules lint"
 _exit_code=0
 "${_cmd[@]}" 1>"${_lint_resultfile}" 2>"${_lint_logfile}" || _exit_code=$?
 
-_stop_token="stop-$(head -c 8 /dev/urandom | od -An -tx1 | tr -d ' \n')"
-
 if [ "${_exit_code}" -eq 0 ]; then
   echo "INFO: octorules lint: clean, no issues found."
 elif [ "${_exit_code}" -eq 2 ]; then
   echo "WARN: octorules lint found warnings."
-  echo "::stop-commands::${_stop_token}"
-  cat "${_lint_resultfile}"
-  echo "::${_stop_token}::"
+  sed 's/\[WARNING\]/[WARNING ]/g; s/\[ERROR\]/[ERROR ]/g' "${_lint_resultfile}"
 else
   echo "FAIL: octorules lint found errors (exit code ${_exit_code})."
-  echo "::stop-commands::${_stop_token}"
-  cat "${_lint_resultfile}"
+  sed 's/\[WARNING\]/[WARNING ]/g; s/\[ERROR\]/[ERROR ]/g' "${_lint_resultfile}"
   cat "${_lint_logfile}"
-  echo "::${_stop_token}::"
 fi
 
 # Always exit 0. Store real exit code in output.
