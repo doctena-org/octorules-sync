@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.2.1] - 2026-03-06
+
+### Fixed
+
+- PR comment now shows "Lint: clean, no issues found." when lint is enabled
+  and passes with no findings. Previously, the lint section was omitted
+  entirely when clean, requiring reviewers to check CI logs.
+- CI workflow installs `yamllint` explicitly via pip instead of relying on
+  it being pre-installed on the GitHub runner.
+
 ## [1.2.0] - 2026-03-05
 
 ### Added

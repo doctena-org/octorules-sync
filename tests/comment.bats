@@ -134,12 +134,21 @@ teardown() {
   [[ "${gh_calls}" == *"W001: some warning"* ]]
 }
 
-@test "lint file empty: comment body omits lint section" {
+@test "lint file empty: comment body omits lint section when lint disabled" {
   touch "${GITHUB_WORKSPACE}/octorules-sync.lint"
-  run bash "${SCRIPT_DIR}/comment.sh"
+  LINT_EXIT_CODE="" run bash "${SCRIPT_DIR}/comment.sh"
   [ "${status}" -eq 0 ]
   gh_calls="$(cat "${GH_CALLS_FILE}")"
   [[ "${gh_calls}" != *"Lint Results"* ]]
+}
+
+@test "lint clean: comment body shows clean message when lint passed" {
+  touch "${GITHUB_WORKSPACE}/octorules-sync.lint"
+  LINT_EXIT_CODE="0" run bash "${SCRIPT_DIR}/comment.sh"
+  [ "${status}" -eq 0 ]
+  gh_calls="$(cat "${GH_CALLS_FILE}")"
+  [[ "${gh_calls}" == *"Lint Results"* ]]
+  [[ "${gh_calls}" == *"clean, no issues found"* ]]
 }
 
 @test "lint file missing: comment body omits lint section" {

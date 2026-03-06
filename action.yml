@@ -114,6 +114,7 @@ runs:
         PR_COMMENT_TOKEN: ${{ inputs.pr_comment_token }}
         PR_NUMBER: ${{ github.event.pull_request.number }}
         GITHUB_REPOSITORY: ${{ github.repository }}
+        LINT_EXIT_CODE: ${{ steps.lint.outputs.lint_exit_code }}
       run: ${GITHUB_ACTION_PATH}/scripts/comment.sh
       shell: bash
       working-directory: ${{ github.workspace }}

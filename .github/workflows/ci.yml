@@ -16,6 +16,9 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v6
 
+      - name: Install yamllint
+        run: pip install yamllint
+
       - name: Lint YAML files
         run: yamllint --no-warnings ./
 

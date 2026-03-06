@@ -52,6 +52,14 @@ $(cat "${_lint_resultfile}")
 
 ---
 "
+elif [ "${LINT_EXIT_CODE:-}" = "0" ]; then
+  _body+="
+### Lint Results
+
+Lint: clean, no issues found.
+
+---
+"
 fi
 
 if [ -f "${_planfile}" ]; then
