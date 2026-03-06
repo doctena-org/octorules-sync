@@ -75,6 +75,39 @@ MOCK
   [ "${result1}" != "${result2}" ]
 }
 
+@test "build_flags: populates array from space-separated values" {
+  build_flags my_arr "--zone" "a.com b.com"
+  [ "${#my_arr[@]}" -eq 4 ]
+  [ "${my_arr[0]}" = "--zone" ]
+  [ "${my_arr[1]}" = "a.com" ]
+  [ "${my_arr[2]}" = "--zone" ]
+  [ "${my_arr[3]}" = "b.com" ]
+}
+
+@test "build_flags: empty string produces empty array" {
+  build_flags my_arr "--zone" ""
+  [ "${#my_arr[@]}" -eq 0 ]
+}
+
+@test "build_flags: single value produces two-element array" {
+  build_flags my_arr "--phase" "cache_rules"
+  [ "${#my_arr[@]}" -eq 2 ]
+  [ "${my_arr[0]}" = "--phase" ]
+  [ "${my_arr[1]}" = "cache_rules" ]
+}
+
+@test "escape_actions_tags: prints with WARNING and ERROR tags escaped" {
+  local tmpfile="${MOCK_DIR}/tags.txt"
+  printf '[WARNING] some warning\n[ERROR] some error\n' > "${tmpfile}"
+  run escape_actions_tags "${tmpfile}"
+  [[ "${output}" == *"[WARNING ]"* ]]
+  [[ "${output}" == *"[ERROR ]"* ]]
+  # Original file is not modified.
+  run cat "${tmpfile}"
+  [[ "${output}" == *"[WARNING]"* ]]
+  [[ "${output}" == *"[ERROR]"* ]]
+}
+
 @test "retry: warns on stderr between retries" {
   # Capture stderr from a command that fails once then succeeds.
   local counter_file="${MOCK_DIR}/counter"

@@ -213,6 +213,26 @@ MOCK
   [[ "${gh_calls}" == *"POST"* ]]
 }
 
+@test "comment lookup fails after max retries exhausted" {
+  # gh mock: all list calls fail.
+  cat > "${MOCK_DIR}/gh" <<'MOCK'
+#!/bin/bash
+echo "$@" >> "${GH_CALLS_FILE}"
+if [[ "$*" == *"--paginate"* ]]; then
+  exit 1
+fi
+exit 0
+MOCK
+  chmod +x "${MOCK_DIR}/gh"
+
+  run bash "${SCRIPT_DIR}/comment.sh"
+  [ "${status}" -eq 0 ]
+  # After 3 failed retries, falls back to creating a new comment.
+  gh_calls="$(cat "${GH_CALLS_FILE}")"
+  [[ "${gh_calls}" == *"WARN"* ]] || [[ "${output}" == *"WARN"* ]]
+  [[ "${gh_calls}" == *"POST"* ]]
+}
+
 # ---------- Comment body edge cases ----------
 
 @test "comment body handles backticks and code fences in plan" {

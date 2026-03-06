@@ -24,26 +24,35 @@ _zones="${ZONES}"
 _logfile="${GITHUB_WORKSPACE}/octorules-sync.log"
 _planfile="${GITHUB_WORKSPACE}/octorules-sync.plan"
 _delim="$(random_delim OCTORULES_EOF)"
+_checksum_value=""
 
 echo "INFO: Cleaning up plan and log files if they already exist"
 rm -f "${_logfile}" "${_planfile}"
 
 echo "INFO: config_path: ${_config_path}"
 
-# Build repeated flags from space-separated inputs.
+# Build repeated flags from space-separated inputs (populated via nameref in build_flags).
 _zone_flags=()
-if [ -n "${_zones}" ]; then
-  for _z in ${_zones}; do  # intentional word splitting
-    _zone_flags+=("--zone" "${_z}")
-  done
-fi
-
 _phase_flags=()
-if [ -n "${_phases}" ]; then
-  for _p in ${_phases}; do  # intentional word splitting
-    _phase_flags+=("--phase" "${_p}")
-  done
-fi
+build_flags _zone_flags "--zone" "${_zones}"
+build_flags _phase_flags "--phase" "${_phases}"
+
+# Write GITHUB_OUTPUT variables. Called on both success and failure paths.
+# Pass "with_checksum" to include the checksum line (success path only).
+_write_outputs() {
+  {
+    echo "exit_code=${_exit_code}"
+    if [ "${1:-}" = "with_checksum" ]; then
+      echo "checksum=${_checksum_value}"
+    fi
+    echo "log<<${_delim}"
+    cat "${_logfile}"
+    echo "${_delim}"
+    echo "plan<<${_delim}"
+    cat "${_planfile}"
+    echo "${_delim}"
+  } >> "${GITHUB_OUTPUT}"
+}
 
 if [ "${_doit}" = "--doit" ]; then
   # --- Apply mode: octorules sync --doit ---
@@ -75,16 +84,7 @@ if [ "${_doit}" = "--doit" ]; then
       echo "FAIL: Plan output (${_planfile}):"
       cat "${_planfile}"
     fi
-    # Still set outputs before exiting so downstream steps can inspect them.
-    {
-      echo "exit_code=${_exit_code}"
-      echo "log<<${_delim}"
-      cat "${_logfile}"
-      echo "${_delim}"
-      echo "plan<<${_delim}"
-      cat "${_planfile}"
-      echo "${_delim}"
-    } >> "${GITHUB_OUTPUT}"
+    _write_outputs
     exit 1
   fi
 else
@@ -111,15 +111,7 @@ else
       echo "FAIL: Plan output (${_planfile}):"
       cat "${_planfile}"
     fi
-    {
-      echo "exit_code=${_exit_code}"
-      echo "log<<${_delim}"
-      cat "${_logfile}"
-      echo "${_delim}"
-      echo "plan<<${_delim}"
-      cat "${_planfile}"
-      echo "${_delim}"
-    } >> "${GITHUB_OUTPUT}"
+    _write_outputs
     exit 1
   fi
 fi
@@ -127,19 +119,8 @@ fi
 echo "INFO: octorules output has been written to ${_logfile}"
 
 # Extract checksum from plan logfile (plan mode only).
-_checksum_value=""
 if [ "${_doit}" != "--doit" ] && [ -f "${_logfile}" ]; then
-  _checksum_value="$(grep -oP '^checksum=\K[0-9a-f]+' "${_logfile}" || true)"
+  _checksum_value="$(grep -oP '^checksum=\K[0-9a-f]{64}' "${_logfile}" || true)"
 fi
 
-# Set outputs for downstream steps.
-{
-  echo "exit_code=${_exit_code}"
-  echo "checksum=${_checksum_value}"
-  echo "log<<${_delim}"
-  cat "${_logfile}"
-  echo "${_delim}"
-  echo "plan<<${_delim}"
-  cat "${_planfile}"
-  echo "${_delim}"
-} >> "${GITHUB_OUTPUT}"
+_write_outputs with_checksum

@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.2.2] - 2026-03-06
+
+### Changed
+
+- Extracted `build_flags()` and `escape_actions_tags()` into `lib.sh` — removes
+  duplicate flag-building loops from `run.sh` and `lint.sh`, and deduplicates
+  the inline `sed` command for escaping GitHub Actions log annotations.
+- Extracted `_write_outputs()` function in `run.sh` — deduplicates the
+  GITHUB_OUTPUT heredoc block (was repeated 3 times). Error paths no longer
+  emit a `checksum=` line (only success paths do).
+- Checksum extraction regex tightened from `[0-9a-f]+` to `[0-9a-f]{64}`
+  (SHA-256 is always exactly 64 hex chars).
+- CI: `yamllint` install pinned to `>=1.35,<2` instead of unpinned `pip install
+  yamllint`.
+- Release workflow validates major version tag format before force-pushing
+  (rejects malformed tags like `v1.2` → `v1` extraction failures).
+
+### Added
+
+- `build_flags` tests in `lib.bats` (3 tests: multi-value, empty, single).
+- `escape_actions_tags` test in `lib.bats` (verifies stdout output and file
+  preservation).
+- `comment lookup fails after max retries exhausted` test in `comment.bats`.
+- Checksum output tests in `run.bats`: error paths have no `checksum=` line,
+  success paths always have `checksum=` line.
+
 ## [1.2.1] - 2026-03-06
 
 ### Fixed

@@ -198,6 +198,28 @@ MOCK
   grep -q "checksum=$" "${GITHUB_OUTPUT}"
 }
 
+@test "plan mode failure: GITHUB_OUTPUT has no checksum line" {
+  echo "1" > "${MOCK_EXIT_FILE}"
+  run bash "${SCRIPT_DIR}/run.sh"
+  [ "${status}" -eq 1 ]
+  # Error paths should not include a checksum= line in GITHUB_OUTPUT.
+  ! grep -q "^checksum=" "${GITHUB_OUTPUT}"
+}
+
+@test "sync mode failure: GITHUB_OUTPUT has no checksum line" {
+  echo "1" > "${MOCK_EXIT_FILE}"
+  DOIT="--doit" run bash "${SCRIPT_DIR}/run.sh"
+  [ "${status}" -eq 1 ]
+  ! grep -q "^checksum=" "${GITHUB_OUTPUT}"
+}
+
+@test "sync mode success: GITHUB_OUTPUT still has checksum line" {
+  DOIT="--doit" run bash "${SCRIPT_DIR}/run.sh"
+  [ "${status}" -eq 0 ]
+  # Success path always writes checksum= (empty for sync mode).
+  grep -q "^checksum=$" "${GITHUB_OUTPUT}"
+}
+
 @test "sync mode: does not pass --checksum when CHECKSUM is empty" {
   DOIT="--doit" CHECKSUM="" run bash "${SCRIPT_DIR}/run.sh"
   args="$(cat "${MOCK_ARGS_FILE}")"

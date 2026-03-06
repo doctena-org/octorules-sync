@@ -24,20 +24,11 @@ _lint_logfile="${GITHUB_WORKSPACE}/octorules-sync.lint.log"
 _delim="$(random_delim OCTORULES_LINT_EOF)"
 rm -f "${_lint_resultfile}" "${_lint_logfile}"
 
-# Build repeated flags from space-separated inputs.
+# Build repeated flags from space-separated inputs (populated via nameref in build_flags).
 _zone_flags=()
-if [ -n "${ZONES}" ]; then
-  for _z in ${ZONES}; do  # intentional word splitting
-    _zone_flags+=("--zone" "${_z}")
-  done
-fi
-
 _phase_flags=()
-if [ -n "${PHASES}" ]; then
-  for _p in ${PHASES}; do  # intentional word splitting
-    _phase_flags+=("--phase" "${_p}")
-  done
-fi
+build_flags _zone_flags "--zone" "${ZONES}"
+build_flags _phase_flags "--phase" "${PHASES}"
 
 # Global flags before subcommand. Always --exit-code in CI.
 _cmd=(octorules --config="${CONFIG_PATH}")
@@ -57,10 +48,10 @@ if [ "${_exit_code}" -eq 0 ]; then
   echo "INFO: octorules lint: clean, no issues found."
 elif [ "${_exit_code}" -eq 2 ]; then
   echo "WARN: octorules lint found warnings."
-  sed 's/\[WARNING\]/[WARNING ]/g; s/\[ERROR\]/[ERROR ]/g' "${_lint_resultfile}"
+  escape_actions_tags "${_lint_resultfile}"
 else
   echo "FAIL: octorules lint found errors (exit code ${_exit_code})."
-  sed 's/\[WARNING\]/[WARNING ]/g; s/\[ERROR\]/[ERROR ]/g' "${_lint_resultfile}"
+  escape_actions_tags "${_lint_resultfile}"
   cat "${_lint_logfile}"
 fi
 

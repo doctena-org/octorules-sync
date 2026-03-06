@@ -28,5 +28,9 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           major="${TAG%%.*}"
+          if ! [[ "${major}" =~ ^v[0-9]+$ ]]; then
+            echo "ERROR: Invalid major version tag: ${major}"
+            exit 1
+          fi
           git tag -f "${major}" "${TAG}"
           git push -f origin "${major}"
