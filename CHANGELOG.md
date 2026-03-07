@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.2.5] - 2026-03-07
+
+### Fixed
+
+- **Comment deduplication broken since v1.2.3**: the `--arg` jq flag doesn't
+  work with `gh api --jq` (which takes a single expression string, not
+  separate jq flags). The comment lookup always failed silently, causing a
+  new comment on every run instead of updating the existing one. Fixed by
+  inlining the marker constant in the jq expression.
+
 ## [1.2.4] - 2026-03-07
 
 ### Fixed
@@ -17,8 +27,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Security
 
-- `comment.sh`: jq filter now uses `--arg` for the marker variable instead of
-  shell interpolation, preventing injection via crafted marker strings.
+- `comment.sh`: jq filter used `--arg` for the marker variable instead of
+  shell interpolation — **reverted in v1.2.4** (`--arg` is not supported by
+  `gh api --jq`, broke comment deduplication).
 - `run.sh`: added `${CONFIG_PATH:?}`, `${GITHUB_WORKSPACE:?}`, `${GITHUB_OUTPUT:?}`
   validation — fails fast with a clear message if required env vars are unset.
 - `lint.sh`: added `${CONFIG_PATH:?}`, `${GITHUB_WORKSPACE:?}`, and
