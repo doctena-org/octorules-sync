@@ -123,6 +123,13 @@ teardown() {
   [[ "${gh_calls}" == *"Some plan content here"* ]]
 }
 
+@test "comment body contains Rule Changes header" {
+  run bash "${SCRIPT_DIR}/comment.sh"
+  [ "${status}" -eq 0 ]
+  gh_calls="$(cat "${GH_CALLS_FILE}")"
+  [[ "${gh_calls}" == *"Rule Changes"* ]]
+}
+
 # ---------- Lint results in comment ----------
 
 @test "lint file with content: comment body contains Lint Results section" {

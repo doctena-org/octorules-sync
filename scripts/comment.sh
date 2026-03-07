@@ -64,6 +64,10 @@ Lint: clean, no issues found.
 "
 fi
 
+_body+="### Rule Changes
+
+"
+
 if [ -f "${_planfile}" ]; then
   _body+="$(cat "${_planfile}")"
 else
