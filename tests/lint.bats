@@ -41,6 +41,29 @@ teardown() {
   rm -rf "${MOCK_DIR}" "${GITHUB_WORKSPACE}" "${GITHUB_OUTPUT}"
 }
 
+# ---------- Env var validation ----------
+
+@test "fails when CONFIG_PATH unset" {
+  unset CONFIG_PATH
+  run bash "${SCRIPT_DIR}/lint.sh"
+  [ "${status}" -ne 0 ]
+  [[ "${output}" == *"CONFIG_PATH"* ]]
+}
+
+@test "fails when GITHUB_WORKSPACE unset" {
+  unset GITHUB_WORKSPACE
+  run bash "${SCRIPT_DIR}/lint.sh"
+  [ "${status}" -ne 0 ]
+  [[ "${output}" == *"GITHUB_WORKSPACE"* ]]
+}
+
+@test "fails when GITHUB_OUTPUT unset" {
+  unset GITHUB_OUTPUT
+  run bash "${SCRIPT_DIR}/lint.sh"
+  [ "${status}" -ne 0 ]
+  [[ "${output}" == *"GITHUB_OUTPUT"* ]]
+}
+
 # ---------- Skip conditions ----------
 
 @test "skip when LINT != Yes" {

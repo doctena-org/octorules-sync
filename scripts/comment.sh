@@ -11,6 +11,8 @@ set -euo pipefail
 # shellcheck source=scripts/lib.sh
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
+: "${GITHUB_WORKSPACE:?GITHUB_WORKSPACE is not set}"
+
 _planfile="${GITHUB_WORKSPACE}/octorules-sync.plan"
 _marker="<!-- octorules-sync-plan -->"
 
@@ -79,7 +81,7 @@ if ! _existing_comment_id="$(
   retry 3 2 gh api \
     --paginate \
     "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
-    --jq ".[] | select(.body | startswith(\"${_marker}\")) | .id" \
+    --jq --arg marker "${_marker}" '.[] | select(.body | startswith($marker)) | .id' \
   | head -n 1
 )"; then
   echo "WARN: Could not fetch existing comments after 3 attempts. A new comment will be created."

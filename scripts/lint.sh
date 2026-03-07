@@ -13,6 +13,10 @@ set -euo pipefail
 # shellcheck source=scripts/lib.sh
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
+: "${CONFIG_PATH:?CONFIG_PATH is not set}"
+: "${GITHUB_WORKSPACE:?GITHUB_WORKSPACE is not set}"
+: "${GITHUB_OUTPUT:?GITHUB_OUTPUT is not set}"
+
 if [ "${LINT}" != "Yes" ]; then
   echo "SKIP: \$LINT is not 'Yes'."
   { echo "lint_exit_code="; echo "lint_results="; } >> "${GITHUB_OUTPUT}"
