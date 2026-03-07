@@ -179,6 +179,14 @@ teardown() {
 
 # ---------- Missing plan file ----------
 
+@test "empty plan file: comment shows no changes message" {
+  truncate -s 0 "${GITHUB_WORKSPACE}/octorules-sync.plan"
+  run bash "${SCRIPT_DIR}/comment.sh"
+  [ "${status}" -eq 0 ]
+  gh_calls="$(cat "${GH_CALLS_FILE}")"
+  [[ "${gh_calls}" == *"No changes detected"* ]]
+}
+
 @test "missing plan file: comment shows fallback message" {
   rm -f "${GITHUB_WORKSPACE}/octorules-sync.plan"
   run bash "${SCRIPT_DIR}/comment.sh"

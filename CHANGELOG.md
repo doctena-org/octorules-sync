@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.3.0] - 2026-03-07
+
+### Added
+- `require_octorules()` helper in `lib.sh` — fails with a clear message
+  if octorules is not found on PATH. Used by `run.sh` and `lint.sh`.
+- `run_capturing()` helper in `lib.sh` — centralizes the `tee` + `wait` +
+  `sync` pattern for capturing stdout/stderr to files.
+- `warn_unexpected()` helper in `lib.sh` — warns (without failing) when
+  an input value is not in the expected set. Used for `DOIT`, `FORCE`, and
+  `LINT_SEVERITY` validation.
+- `comment.sh` now distinguishes empty plan file ("No changes detected") from
+  missing plan file ("No plan output — run step was skipped").
+- `run.sh` touches plan/log files after cleanup to guarantee they exist even
+  if octorules never runs.
+- `run.sh` and `lint.sh` call `sync` after `wait` to flush kernel buffers
+  before reading output files.
+- Release workflow validates tag matches `^vX.Y.Z$` semver format before
+  creating a release.
+- Integration tests: exit-code-2 (changes detected) and lint-errors-block-sync
+  scenarios.
+- README: troubleshooting section (octorules not found, CF token, config,
+  PR comment permissions).
+- README: documents `<!-- octorules-sync-plan -->` comment deduplication marker.
+- README: clarifies `pr_comment_token` requires explicit token (not auto-injected).
+- `lib.bats`: tests for `require_octorules`, `run_capturing`, `warn_unexpected`.
+- `comment.bats`: test for empty plan file vs missing plan file.
+
+### Removed
+- `escape_actions_tags()` from `lib.sh` — was dead code (defined and tested
+  but never called from any script). Test removed from `lib.bats`.
+
+### Changed
+- `run.sh` and `lint.sh` use `require_octorules` and `run_capturing` from
+  `lib.sh` instead of inline duplicates.
+- Install message recommends `octorules[wirefilter]` instead of bare
+  `octorules`.
+
 ## [1.2.5] - 2026-03-07
 
 ### Fixed

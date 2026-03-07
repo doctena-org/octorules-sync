@@ -128,7 +128,7 @@ Default `"No"`.
 
 Provide a token to use, if you set `add_pr_comment` to `"Yes"`.
 
-The default `github.token` has sufficient permissions for same-repo PRs. For cross-repo or fork PRs, use a token with `pull_requests: write` scope.
+**Important:** No token is automatically injected — you must explicitly pass a token (e.g. `${{ github.token }}`). The default `github.token` has sufficient permissions for same-repo PRs. For cross-repo or fork PRs, use a token with `pull_requests: write` scope.
 
 Default `""` (empty string, must be provided when `add_pr_comment` is `"Yes"`).
 
@@ -193,7 +193,7 @@ To have this action post the plan as a PR comment, configure your workflow to:
 2. Set `add_pr_comment` to `"Yes"`
 3. Provide a `pr_comment_token`
 
-The action will create a single comment and update it in place on subsequent pushes to the same PR.
+The action will create a single comment and update it in place on subsequent pushes to the same PR. Comment deduplication uses a hidden HTML marker (`<!-- octorules-sync-plan -->`) to find and update existing comments.
 
 ```yaml
 name: octorules-plan
@@ -336,6 +336,39 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 ```
+
+## Troubleshooting
+
+### `octorules not found on PATH`
+
+The action requires `octorules` to be installed before it runs. Add an install step to your workflow:
+
+```yaml
+- run: pip install 'octorules>=0.10,<2'
+```
+
+### `CLOUDFLARE_API_TOKEN` / invalid token errors
+
+Ensure you have created a repository secret named `CLOUDFLARE_API_TOKEN` and passed it as an environment variable:
+
+```yaml
+env:
+  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+```
+
+Your `config.yaml` must reference the token with `env/CLOUDFLARE_API_TOKEN`.
+
+### Config file not found
+
+The `config_path` input defaults to `config.yaml` in your repository root. If your config is elsewhere, set `config_path` accordingly. The path is relative to the repository root (workspace).
+
+### PR comment permission errors
+
+If the action fails to create or update PR comments, check that:
+
+1. You passed a valid token via `pr_comment_token` (e.g. `${{ github.token }}`).
+2. The token has `pull_requests: write` permission. For same-repo PRs, the default `github.token` is sufficient.
+3. For fork PRs or cross-repo workflows, use a Personal Access Token or GitHub App token with appropriate scopes.
 
 ## Contributing
 

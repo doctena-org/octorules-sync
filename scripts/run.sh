@@ -17,12 +17,18 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 : "${GITHUB_WORKSPACE:?GITHUB_WORKSPACE is not set}"
 : "${GITHUB_OUTPUT:?GITHUB_OUTPUT is not set}"
 
+require_octorules
+
 _config_path="${CONFIG_PATH}"
 _doit="${DOIT}"
 _force="${FORCE}"
 _checksum="${CHECKSUM}"
 _phases="${PHASES}"
 _zones="${ZONES}"
+
+# Warn on unexpected input values (don't fail — backwards compat).
+warn_unexpected "DOIT" "${_doit}" "--doit"
+warn_unexpected "FORCE" "${_force}" "Yes No"
 
 # Output files.
 _logfile="${GITHUB_WORKSPACE}/octorules-sync.log"
@@ -32,6 +38,7 @@ _checksum_value=""
 
 echo "INFO: Cleaning up plan and log files if they already exist"
 rm -f "${_logfile}" "${_planfile}"
+touch "${_logfile}" "${_planfile}"
 
 echo "INFO: config_path: ${_config_path}"
 
@@ -77,17 +84,10 @@ if [ "${_doit}" = "--doit" ]; then
   fi
 
   echo "INFO: Running octorules sync --doit"
-  _exit_code=0
-  "${_cmd[@]}" 1>"${_planfile}" 2>"${_logfile}" || _exit_code=$?
+  run_capturing "${_planfile}" "${_logfile}" "${_cmd[@]}"
 
   if [ "${_exit_code}" -ne 0 ]; then
     echo "FAIL: octorules sync exited with code ${_exit_code}."
-    echo "FAIL: Log output (${_logfile}):"
-    cat "${_logfile}"
-    if [ -s "${_planfile}" ]; then
-      echo "FAIL: Plan output (${_planfile}):"
-      cat "${_planfile}"
-    fi
     _write_outputs
     exit 1
   fi
@@ -100,8 +100,7 @@ else
   _cmd+=(plan --checksum)
 
   echo "INFO: Running octorules plan"
-  _exit_code=0
-  "${_cmd[@]}" 1>"${_planfile}" 2>"${_logfile}" || _exit_code=$?
+  run_capturing "${_planfile}" "${_logfile}" "${_cmd[@]}"
 
   if [ "${_exit_code}" -eq 0 ]; then
     echo "INFO: octorules plan completed. No changes detected."
@@ -109,12 +108,6 @@ else
     echo "INFO: octorules plan detected changes."
   else
     echo "FAIL: octorules plan exited with code ${_exit_code}."
-    echo "FAIL: Log output (${_logfile}):"
-    cat "${_logfile}"
-    if [ -s "${_planfile}" ]; then
-      echo "FAIL: Plan output (${_planfile}):"
-      cat "${_planfile}"
-    fi
     _write_outputs
     exit 1
   fi

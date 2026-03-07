@@ -68,3 +68,113 @@ jobs:
           test -n "${{ steps.octorules.outputs.exit_code }}"
           test -f "${GITHUB_WORKSPACE}/octorules-sync.plan"
           test -f "${GITHUB_WORKSPACE}/octorules-sync.log"
+
+  integration-exit-code-2:
+    name: Plan with changes detected (exit 2)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      - name: Create mock octorules that exits 2
+        run: |
+          mkdir -p "${{ runner.temp }}/bin"
+          cat > "${{ runner.temp }}/bin/octorules" <<'MOCK'
+          #!/bin/bash
+          if [[ "$*" == *"plan"* ]]; then
+            echo "checksum=abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789" >&2
+            echo "zone: example.com"
+            echo "  cache_rules: 2 create, 1 update"
+            exit 2
+          fi
+          if [[ "$*" == *"lint"* ]]; then
+            exit 0
+          fi
+          exit 0
+          MOCK
+          chmod +x "${{ runner.temp }}/bin/octorules"
+          echo "${{ runner.temp }}/bin" >> "$GITHUB_PATH"
+
+      - name: Create minimal config
+        run: |
+          cat > config.yaml <<'EOF'
+          providers:
+            cloudflare:
+              token: env/CLOUDFLARE_API_TOKEN
+            rules:
+              directory: ./rules
+          zones:
+            test.example.com:
+              sources:
+                - rules
+          EOF
+          mkdir -p rules
+          echo '---' > rules/test.example.com.yaml
+
+      - name: Run action in plan mode (exit 2)
+        id: octorules
+        uses: ./
+        with:
+          config_path: config.yaml
+        env:
+          CLOUDFLARE_API_TOKEN: fake-token-for-test
+
+      - name: Verify exit code 2 and checksum
+        run: |
+          test "${{ steps.octorules.outputs.exit_code }}" = "2"
+          test -n "${{ steps.octorules.outputs.checksum }}"
+
+  integration-lint-errors:
+    name: Lint errors block sync
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      - name: Create mock octorules with lint errors
+        run: |
+          mkdir -p "${{ runner.temp }}/bin"
+          cat > "${{ runner.temp }}/bin/octorules" <<'MOCK'
+          #!/bin/bash
+          if [[ "$*" == *"lint"* ]]; then
+            echo "E001: Missing required field 'action'"
+            exit 1
+          fi
+          # sync/plan should not be reached when lint blocks
+          echo "UNEXPECTED: sync/plan ran despite lint errors" >&2
+          exit 0
+          MOCK
+          chmod +x "${{ runner.temp }}/bin/octorules"
+          echo "${{ runner.temp }}/bin" >> "$GITHUB_PATH"
+
+      - name: Create minimal config
+        run: |
+          cat > config.yaml <<'EOF'
+          providers:
+            cloudflare:
+              token: env/CLOUDFLARE_API_TOKEN
+            rules:
+              directory: ./rules
+          zones:
+            test.example.com:
+              sources:
+                - rules
+          EOF
+          mkdir -p rules
+          echo '---' > rules/test.example.com.yaml
+
+      - name: Run action with lint enabled (expect failure)
+        id: octorules
+        uses: ./
+        continue-on-error: true
+        with:
+          config_path: config.yaml
+          doit: '--doit'
+          lint: 'Yes'
+        env:
+          CLOUDFLARE_API_TOKEN: fake-token-for-test
+
+      - name: Verify action failed due to lint errors
+        run: |
+          test "${{ steps.octorules.outcome }}" = "failure"
+          test "${{ steps.octorules.outputs.lint_exit_code }}" = "1"

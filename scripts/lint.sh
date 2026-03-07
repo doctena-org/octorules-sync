@@ -17,6 +17,11 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 : "${GITHUB_WORKSPACE:?GITHUB_WORKSPACE is not set}"
 : "${GITHUB_OUTPUT:?GITHUB_OUTPUT is not set}"
 
+require_octorules
+
+# Warn on unexpected input values (don't fail — backwards compat).
+warn_unexpected "LINT_SEVERITY" "${LINT_SEVERITY}" "error warning info"
+
 if [ "${LINT}" != "Yes" ]; then
   echo "SKIP: \$LINT is not 'Yes'."
   { echo "lint_exit_code="; echo "lint_results="; } >> "${GITHUB_OUTPUT}"
@@ -45,18 +50,14 @@ if [ -n "${LINT_PLAN}" ]; then
 fi
 
 echo "INFO: Running octorules lint"
-_exit_code=0
-"${_cmd[@]}" 1>"${_lint_resultfile}" 2>"${_lint_logfile}" || _exit_code=$?
+run_capturing "${_lint_resultfile}" "${_lint_logfile}" "${_cmd[@]}"
 
 if [ "${_exit_code}" -eq 0 ]; then
   echo "INFO: octorules lint: clean, no issues found."
 elif [ "${_exit_code}" -eq 2 ]; then
   echo "WARN: octorules lint found warnings."
-  escape_actions_tags "${_lint_resultfile}"
 else
   echo "FAIL: octorules lint found errors (exit code ${_exit_code})."
-  escape_actions_tags "${_lint_resultfile}"
-  cat "${_lint_logfile}"
 fi
 
 # Always exit 0. Store real exit code in output.

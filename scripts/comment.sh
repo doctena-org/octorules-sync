@@ -68,8 +68,10 @@ _body+="### Rule Changes
 
 "
 
-if [ -f "${_planfile}" ]; then
+if [ -s "${_planfile}" ]; then
   _body+="$(cat "${_planfile}")"
+elif [ -f "${_planfile}" ]; then
+  _body+="_No changes detected._"
 else
   _body+="_No plan output (run step was skipped)._"
 fi

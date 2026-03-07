@@ -96,16 +96,73 @@ MOCK
   [ "${my_arr[1]}" = "cache_rules" ]
 }
 
-@test "escape_actions_tags: prints with WARNING and ERROR tags escaped" {
-  local tmpfile="${MOCK_DIR}/tags.txt"
-  printf '[WARNING] some warning\n[ERROR] some error\n' > "${tmpfile}"
-  run escape_actions_tags "${tmpfile}"
-  [[ "${output}" == *"[WARNING ]"* ]]
-  [[ "${output}" == *"[ERROR ]"* ]]
-  # Original file is not modified.
-  run cat "${tmpfile}"
-  [[ "${output}" == *"[WARNING]"* ]]
-  [[ "${output}" == *"[ERROR]"* ]]
+@test "require_octorules: succeeds when octorules is on PATH" {
+  cat > "${MOCK_DIR}/octorules" <<'MOCK'
+#!/bin/bash
+exit 0
+MOCK
+  chmod +x "${MOCK_DIR}/octorules"
+  run require_octorules
+  [ "${status}" -eq 0 ]
+}
+
+@test "require_octorules: fails with message when octorules is missing" {
+  # Remove any mock octorules so command -v fails.
+  rm -f "${MOCK_DIR}/octorules"
+  # Write a helper script that sources lib.sh and calls require_octorules
+  # with a PATH that has no octorules binary.
+  cat > "${MOCK_DIR}/test_require.sh" <<SCRIPT
+#!/bin/bash
+export PATH="${MOCK_DIR}"
+source "${SCRIPT_DIR}/lib.sh"
+require_octorules
+SCRIPT
+  chmod +x "${MOCK_DIR}/test_require.sh"
+  run bash "${MOCK_DIR}/test_require.sh"
+  [ "${status}" -eq 1 ]
+  [[ "${output}" == *"octorules not found on PATH"* ]]
+}
+
+@test "run_capturing: captures stdout to file" {
+  local out_file="${MOCK_DIR}/out.log"
+  local err_file="${MOCK_DIR}/err.log"
+  run_capturing "${out_file}" "${err_file}" echo "hello stdout"
+  [ "${_exit_code}" -eq 0 ]
+  [[ "$(cat "${out_file}")" == *"hello stdout"* ]]
+}
+
+@test "run_capturing: captures stderr to file" {
+  local out_file="${MOCK_DIR}/out.log"
+  local err_file="${MOCK_DIR}/err.log"
+  run_capturing "${out_file}" "${err_file}" bash -c 'echo "hello stderr" >&2'
+  [ "${_exit_code}" -eq 0 ]
+  [[ "$(cat "${err_file}")" == *"hello stderr"* ]]
+}
+
+@test "run_capturing: sets _exit_code on failure" {
+  local out_file="${MOCK_DIR}/out.log"
+  local err_file="${MOCK_DIR}/err.log"
+  run_capturing "${out_file}" "${err_file}" false
+  [ "${_exit_code}" -ne 0 ]
+}
+
+@test "warn_unexpected: no warning for allowed value" {
+  run warn_unexpected "FORCE" "Yes" "Yes No"
+  [ "${status}" -eq 0 ]
+  [ -z "${output}" ]
+}
+
+@test "warn_unexpected: warns for unexpected value" {
+  run warn_unexpected "FORCE" "maybe" "Yes No"
+  [ "${status}" -eq 0 ]
+  [[ "${output}" == *"WARN: Unexpected value for FORCE"* ]]
+  [[ "${output}" == *"'maybe'"* ]]
+}
+
+@test "warn_unexpected: no warning for empty value" {
+  run warn_unexpected "DOIT" "" "--doit"
+  [ "${status}" -eq 0 ]
+  [ -z "${output}" ]
 }
 
 @test "retry: warns on stderr between retries" {
