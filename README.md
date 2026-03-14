@@ -29,7 +29,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install 'octorules>=0.10,<2'
+      - run: pip install 'octorules[wirefilter]>=0.10,<2'
       - uses: doctena-org/octorules-sync@v1
         with:
           config_path: config.yaml
@@ -270,7 +270,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install 'octorules>=0.10,<2'
+      - run: pip install 'octorules[wirefilter]>=0.10,<2'
       - uses: doctena-org/octorules-sync@v1
         with:
           config_path: config.yaml
@@ -310,7 +310,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install 'octorules>=0.10,<2'
+      - run: pip install 'octorules[wirefilter]>=0.10,<2'
       - uses: doctena-org/octorules-sync@v1
         id: plan
         with:
@@ -327,7 +327,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install 'octorules>=0.10,<2'
+      - run: pip install 'octorules[wirefilter]>=0.10,<2'
       - uses: doctena-org/octorules-sync@v1
         with:
           config_path: config.yaml
@@ -344,7 +344,7 @@ jobs:
 The action requires `octorules` to be installed before it runs. Add an install step to your workflow:
 
 ```yaml
-- run: pip install 'octorules>=0.10,<2'
+- run: pip install 'octorules[wirefilter]>=0.10,<2'
 ```
 
 ### `CLOUDFLARE_API_TOKEN` / invalid token errors
