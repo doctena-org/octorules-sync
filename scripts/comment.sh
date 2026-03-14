@@ -32,6 +32,7 @@ if [ -z "${PR_NUMBER}" ]; then
   exit 0
 fi
 
+# Safe for ephemeral GitHub Actions runners — token is destroyed after the job.
 export GH_TOKEN="${PR_COMMENT_TOKEN}"
 
 echo "INFO: \$ADD_PR_COMMENT is 'Yes' and \$PR_COMMENT_TOKEN is set."
@@ -39,6 +40,7 @@ echo "INFO: \$ADD_PR_COMMENT is 'Yes' and \$PR_COMMENT_TOKEN is set."
 # Construct the comment body with a hidden marker for deduplication.
 _lint_resultfile="${GITHUB_WORKSPACE}/octorules-sync.lint"
 _sha="$(git log -1 --format='%h' 2>/dev/null)" || _sha="unknown"
+_sha="${_sha:-unknown}"
 
 _body="${_marker}
 ## Octorules Plan for ${_sha}
@@ -96,20 +98,20 @@ fi
 
 if [ -n "${_existing_comment_id}" ]; then
   echo "INFO: Updating existing comment ${_existing_comment_id}."
-  gh api \
+  retry 3 2 gh api \
     --method PATCH \
     "repos/${GITHUB_REPOSITORY}/issues/comments/${_existing_comment_id}" \
     -f body="${_body}" > /dev/null || {
-    echo "FAIL: Could not update PR comment."
+    echo "FAIL: Could not update PR comment after 3 attempts."
     exit 1
   }
 else
   echo "INFO: Creating new PR comment."
-  gh api \
+  retry 3 2 gh api \
     --method POST \
     "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
     -f body="${_body}" > /dev/null || {
-    echo "FAIL: Could not create PR comment."
+    echo "FAIL: Could not create PR comment after 3 attempts."
     exit 1
   }
 fi

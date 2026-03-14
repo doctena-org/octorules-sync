@@ -93,6 +93,8 @@ runs:
       working-directory: ${{ github.workspace }}
     - name: Run octorules
       id: run
+      # Run unless sync mode AND lint found errors (exit code 1).
+      # Plan mode always runs; sync mode is blocked only by lint errors, not warnings.
       if: >-
         inputs.doit != '--doit'
         || steps.lint.outputs.lint_exit_code != '1'
@@ -119,7 +121,7 @@ runs:
       shell: bash
       working-directory: ${{ github.workspace }}
     - name: Fail on lint errors
-      if: ${{ !cancelled() && steps.lint.outputs.lint_exit_code == '1' }}
+      if: ${{ !cancelled() && inputs.lint == 'Yes' && steps.lint.outputs.lint_exit_code == '1' }}
       run: |
         echo "FAIL: octorules lint found errors. See lint results above."
         exit 1
