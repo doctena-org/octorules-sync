@@ -1,8 +1,8 @@
 # octorules-sync
 
-This action runs `octorules` from [doctena-org/octorules](https://github.com/doctena-org/octorules) to deploy your Cloudflare Rules config.
+This action runs `octorules` from [doctena-org/octorules](https://github.com/doctena-org/octorules) to deploy your WAF rules config.
 
-octorules allows you to manage your Cloudflare Rules (redirects, rewrites, headers, cache, WAF, rate limiting, and more) in a portable YAML format and publish changes via the Cloudflare API. It is extensible and customizable.
+octorules allows you to manage WAF and security rules (redirects, rewrites, headers, cache, WAF, rate limiting, and more) as YAML files and publish changes via your provider's API. Supported providers: [Cloudflare](https://github.com/doctena-org/octorules-cloudflare), [AWS WAF](https://github.com/doctena-org/octorules-aws), [Google Cloud Armor](https://github.com/doctena-org/octorules-google).
 
 When you manage your octorules configuration in a GitHub repository, this [GitHub Action](https://help.github.com/actions/getting-started-with-github-actions/about-github-actions) allows you to test and publish your changes automatically using a [workflow](https://help.github.com/actions/configuring-and-managing-workflows) you define.
 
@@ -22,14 +22,14 @@ on:
 
 jobs:
   publish:
-    name: Publish Cloudflare Rules from main
+    name: Publish rules from main
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install 'octorules[wirefilter]>=0.10,<2'
+      - run: pip install -r requirements.txt
       - uses: doctena-org/octorules-sync@v1
         with:
           config_path: config.yaml
@@ -88,7 +88,7 @@ Default `""` (empty string, no checksum verification).
 
 Space separated list of rule phases to sync. Leave empty to sync all phases in the config file. Useful for targeting specific rule types.
 
-Available phases: `redirect_rules`, `url_rewrite_rules`, `request_header_rules`, `response_header_rules`, `config_rules`, `origin_rules`, `cache_rules`, `compression_rules`, `custom_error_rules`, `waf_custom_rules`, `rate_limiting_rules`.
+Available phases: `redirect_rules`, `url_rewrite_rules`, `request_header_rules`, `response_header_rules`, `config_rules`, `origin_rules`, `cache_rules`, `compression_rules`, `custom_error_rules`, `waf_custom_rules`, `waf_managed_rules`, `rate_limiting_rules`, `bot_fight_rules`, `sensitive_data_detection`, `http_ddos_rules`, `bulk_redirect_rules`, `log_custom_fields`, `network_ddos_rules`, `network_firewall_rules`, `network_firewall_managed`, `network_firewall_ratelimit`, `network_firewall_ids`, `url_normalization`.
 
 Default `""` (empty string, all phases).
 
@@ -210,7 +210,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install 'octorules[wirefilter]>=0.11,<2'
+      - run: pip install -r requirements.txt
       - uses: doctena-org/octorules-sync@v1
         with:
           config_path: config.yaml
@@ -250,7 +250,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install 'octorules[wirefilter]>=0.11,<2'
+      - run: pip install -r requirements.txt
       - uses: doctena-org/octorules-sync@v1
         id: octorules
         with:
@@ -270,7 +270,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install 'octorules[wirefilter]>=0.10,<2'
+      - run: pip install -r requirements.txt
       - uses: doctena-org/octorules-sync@v1
         with:
           config_path: config.yaml
@@ -310,7 +310,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install 'octorules[wirefilter]>=0.10,<2'
+      - run: pip install -r requirements.txt
       - uses: doctena-org/octorules-sync@v1
         id: plan
         with:
@@ -327,7 +327,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install 'octorules[wirefilter]>=0.10,<2'
+      - run: pip install -r requirements.txt
       - uses: doctena-org/octorules-sync@v1
         with:
           config_path: config.yaml
@@ -344,7 +344,7 @@ jobs:
 The action requires `octorules` to be installed before it runs. Add an install step to your workflow:
 
 ```yaml
-- run: pip install 'octorules[wirefilter]>=0.10,<2'
+- run: pip install -r requirements.txt
 ```
 
 ### `CLOUDFLARE_API_TOKEN` / invalid token errors
