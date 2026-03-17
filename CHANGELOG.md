@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.4.0] - 2026-03-17
+
+### Added
+- HTML plan file support: when octorules writes an HTML plan file via
+  `PlanHtml` with `path:` config, the action uses it for PR comments
+  (renders tables). Text output goes to stdout for readable terminal logs.
+  Falls back to captured stdout when no HTML file exists (backward compatible).
+
 ## [1.3.1] - 2026-03-14
 
 ### Fixed
