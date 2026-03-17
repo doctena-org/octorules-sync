@@ -266,6 +266,41 @@ MOCK
   grep -q "plan<<OCTORULES_EOF_" "${GITHUB_OUTPUT}"
 }
 
+@test "html plan file preferred over text plan for PR comments" {
+  # Mock produces text stdout, and separately an HTML file is present.
+  cat > "${MOCK_DIR}/octorules" <<'MOCK'
+#!/bin/bash
+echo "$@" > "${MOCK_ARGS_FILE}"
+echo "text plan output"
+# Simulate PlanHtml writing an HTML file via path: config
+echo "<h2>html plan</h2>" > "${GITHUB_WORKSPACE}/octorules-plan.html"
+exit 0
+MOCK
+  chmod +x "${MOCK_DIR}/octorules"
+
+  run bash "${SCRIPT_DIR}/run.sh"
+  [ "${status}" -eq 0 ]
+  # plan output should contain the HTML, not the text
+  grep -q "<h2>html plan</h2>" "${GITHUB_OUTPUT}"
+  # text should NOT be in the plan output (it went to stdout/terminal only)
+  ! grep -q "text plan output" <(grep -A1 "plan<<" "${GITHUB_OUTPUT}")
+}
+
+@test "text plan used when no html file exists" {
+  cat > "${MOCK_DIR}/octorules" <<'MOCK'
+#!/bin/bash
+echo "$@" > "${MOCK_ARGS_FILE}"
+echo "text plan output"
+exit 0
+MOCK
+  chmod +x "${MOCK_DIR}/octorules"
+
+  run bash "${SCRIPT_DIR}/run.sh"
+  [ "${status}" -eq 0 ]
+  # No HTML file, so plan output should be the captured text
+  grep -q "text plan output" "${GITHUB_OUTPUT}"
+}
+
 @test "empty output: log heredoc handles empty log file" {
   cat > "${MOCK_DIR}/octorules" <<'MOCK'
 #!/bin/bash

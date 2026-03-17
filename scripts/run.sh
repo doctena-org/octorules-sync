@@ -33,11 +33,14 @@ warn_unexpected "FORCE" "${_force}" "Yes No"
 # Output files.
 _logfile="${GITHUB_WORKSPACE}/octorules-sync.log"
 _planfile="${GITHUB_WORKSPACE}/octorules-sync.plan"
+# HTML plan file: written by PlanHtml with path: in octorules config.
+# Preferred over _planfile for PR comments (renders tables in GitHub markdown).
+_htmlfile="${GITHUB_WORKSPACE}/octorules-plan.html"
 _delim="$(random_delim OCTORULES_EOF)"
 _checksum_value=""
 
 echo "INFO: Cleaning up plan and log files if they already exist"
-rm -f "${_logfile}" "${_planfile}"
+rm -f "${_logfile}" "${_planfile}" "${_htmlfile}"
 touch "${_logfile}" "${_planfile}"
 
 echo "INFO: config_path: ${_config_path}"
@@ -50,7 +53,13 @@ build_flags _phase_flags "--phase" "${_phases}"
 
 # Write GITHUB_OUTPUT variables. Called on both success and failure paths.
 # Pass "with_checksum" to include the checksum line (success path only).
+# For the "plan" output: prefer the HTML file (renders tables in PR comments),
+# fall back to the captured stdout (text plan).
 _write_outputs() {
+  local _plan_source="${_planfile}"
+  if [ -s "${_htmlfile}" ]; then
+    _plan_source="${_htmlfile}"
+  fi
   {
     echo "exit_code=${_exit_code}"
     if [ "${1:-}" = "with_checksum" ]; then
@@ -60,7 +69,7 @@ _write_outputs() {
     cat "${_logfile}"
     echo "${_delim}"
     echo "plan<<${_delim}"
-    cat "${_planfile}"
+    cat "${_plan_source}"
     echo "${_delim}"
   } >> "${GITHUB_OUTPUT}"
 }
