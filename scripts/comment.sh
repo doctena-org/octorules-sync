@@ -14,6 +14,11 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 : "${GITHUB_WORKSPACE:?GITHUB_WORKSPACE is not set}"
 
 _planfile="${GITHUB_WORKSPACE}/octorules-sync.plan"
+# Prefer the HTML plan file for PR comments (renders tables).
+_htmlfile="${GITHUB_WORKSPACE}/octorules-plan.html"
+if [ -s "${_htmlfile}" ]; then
+  _planfile="${_htmlfile}"
+fi
 _marker="<!-- octorules-sync-plan -->"
 
 if [ "${ADD_PR_COMMENT}" != "Yes" ]; then

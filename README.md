@@ -6,13 +6,14 @@ octorules allows you to manage WAF and security rules (redirects, rewrites, head
 
 When you manage your octorules configuration in a GitHub repository, this [GitHub Action](https://help.github.com/actions/getting-started-with-github-actions/about-github-actions) allows you to test and publish your changes automatically using a [workflow](https://help.github.com/actions/configuring-and-managing-workflows) you define.
 
-## Example workflow
+## Example workflows
+
+### Cloudflare
 
 ```yaml
 name: octorules-sync
 
 on:
-  # Deploy config whenever rule changes are pushed to main.
   push:
     branches:
       - main
@@ -29,7 +30,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install -r requirements.txt
+      - run: pip install octorules-cloudflare
       - uses: doctena-org/octorules-sync@v1
         with:
           config_path: config.yaml
@@ -38,27 +39,55 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 ```
 
+### AWS WAF
+
+```yaml
+      - run: pip install octorules-aws
+      - uses: doctena-org/octorules-sync@v1
+        with:
+          config_path: config.yaml
+          doit: '--doit'
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: eu-central-1
+```
+
+### Google Cloud Armor
+
+```yaml
+      - run: pip install octorules-google
+      - uses: doctena-org/octorules-sync@v1
+        with:
+          config_path: config.yaml
+          doit: '--doit'
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+```
+
+### Multi-provider
+
+Install all provider packages your config uses:
+
+```yaml
+      - run: pip install octorules-cloudflare octorules-aws octorules-google
+```
+
 ## Inputs
 
 ### Secrets
 
-To authenticate with Cloudflare, this action uses
-[encrypted secrets](https://help.github.com/actions/configuring-and-managing-workflows/creating-and-storing-encrypted-secrets#about-encrypted-secrets)
-you've configured on your repository. Create a secret called
-`CLOUDFLARE_API_TOKEN` with your Cloudflare API token, and pass it as an
-environment variable in your workflow:
+Provider credentials are passed as environment variables using
+[encrypted secrets](https://help.github.com/actions/configuring-and-managing-workflows/creating-and-storing-encrypted-secrets#about-encrypted-secrets).
+The secret name and config syntax depend on your provider:
 
-```yaml
-env:
-  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-```
+| Provider | Secret example | Config syntax |
+|----------|---------------|---------------|
+| [Cloudflare](https://github.com/doctena-org/octorules-cloudflare) | `CLOUDFLARE_API_TOKEN` | `token: env/CLOUDFLARE_API_TOKEN` |
+| [AWS WAF](https://github.com/doctena-org/octorules-aws) | Standard boto3 credentials (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`) or IAM role | No `token` needed — boto3 credential chain |
+| [Google Cloud Armor](https://github.com/doctena-org/octorules-google) | `GOOGLE_APPLICATION_CREDENTIALS` or Workload Identity | No `token` needed — Application Default Credentials |
 
-Your `config.yaml` should reference it with:
-
-```yaml
-cloudflare:
-  token: env/CLOUDFLARE_API_TOKEN
-```
+The `env/` prefix in config values resolves environment variables at runtime. See each provider's README for full authentication details.
 
 ### `config_path`
 
@@ -88,7 +117,10 @@ Default `""` (empty string, no checksum verification).
 
 Space separated list of rule phases to sync. Leave empty to sync all phases in the config file. Useful for targeting specific rule types.
 
-Available phases: `redirect_rules`, `url_rewrite_rules`, `request_header_rules`, `response_header_rules`, `config_rules`, `origin_rules`, `cache_rules`, `compression_rules`, `custom_error_rules`, `waf_custom_rules`, `waf_managed_rules`, `rate_limiting_rules`, `bot_fight_rules`, `sensitive_data_detection`, `http_ddos_rules`, `bulk_redirect_rules`, `log_custom_fields`, `network_ddos_rules`, `network_firewall_rules`, `network_firewall_managed`, `network_firewall_ratelimit`, `network_firewall_ids`, `url_normalization`.
+Available phases depend on the configured provider. See each provider's README for the full list:
+[Cloudflare](https://github.com/doctena-org/octorules-cloudflare) (23 phases) |
+[AWS WAF](https://github.com/doctena-org/octorules-aws) (4 phases) |
+[Google Cloud Armor](https://github.com/doctena-org/octorules-google) (4 phases)
 
 Default `""` (empty string, all phases).
 
@@ -112,9 +144,9 @@ Default `"warning"`.
 
 ### `lint_plan`
 
-Cloudflare plan tier override for lint entitlement checks (e.g. `"free"`, `"pro"`, `"business"`, `"enterprise"`). When empty (the default), the plan tier is auto-detected from the Cloudflare API per zone.
+Plan tier override for Cloudflare lint entitlement checks: `"free"`, `"pro"`, `"business"`, `"enterprise"`. AWS WAF and Google Cloud Armor providers ignore this setting.
 
-Default `""` (auto-detect).
+Default `""` (defaults to `"enterprise"`).
 
 ### `add_pr_comment`
 
@@ -181,9 +213,11 @@ When `lint` is set to `"Yes"`, the action runs `octorules lint --exit-code` befo
 - **Plan mode**: lint errors are reported but the plan still runs, so you can see both lint issues and planned changes. The action fails at the end if lint found errors.
 - **Sync mode**: lint errors **block** the sync step entirely — changes are not applied. Warnings do not block sync.
 
-### Wirefilter support
+### Wirefilter support (Cloudflare)
 
-When using lint, installing `octorules[wirefilter]` is **strongly recommended**. Without it, expression validation uses a regex-based fallback that can only extract field and function names. With wirefilter installed, expressions are parsed by Cloudflare's real [wirefilter](https://github.com/cloudflare/wirefilter) engine, enabling detection of syntax errors, unknown fields, type mismatches, and invalid operators that the regex fallback cannot catch.
+When linting Cloudflare rules, installing `octorules[wirefilter]` is **strongly recommended**. Without it, expression validation uses a regex-based fallback that can only extract field and function names. With wirefilter installed, expressions are parsed by Cloudflare's real [wirefilter](https://github.com/cloudflare/wirefilter) engine, enabling detection of syntax errors, unknown fields, type mismatches, and invalid operators that the regex fallback cannot catch.
+
+AWS WAF and Google Cloud Armor providers include their own expression validation (CEL for Cloud Armor) and do not need wirefilter.
 
 ## Pull request plan comments
 
@@ -203,7 +237,7 @@ on:
 
 jobs:
   plan:
-    name: Plan Cloudflare Rules changes
+    name: Plan WAF rules changes
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -341,22 +375,28 @@ jobs:
 
 ### `octorules not found on PATH`
 
-The action requires `octorules` to be installed before it runs. Add an install step to your workflow:
+The action requires `octorules` and a provider package to be installed before it runs. Add an install step to your workflow:
 
 ```yaml
+# Cloudflare
+- run: pip install octorules-cloudflare
+
+# AWS WAF
+- run: pip install octorules-aws
+
+# Google Cloud Armor
+- run: pip install octorules-google
+
+# Multiple providers
+- run: pip install octorules-cloudflare octorules-aws
+
+# Or use a requirements.txt
 - run: pip install -r requirements.txt
 ```
 
-### `CLOUDFLARE_API_TOKEN` / invalid token errors
+### Provider token / invalid token errors
 
-Ensure you have created a repository secret named `CLOUDFLARE_API_TOKEN` and passed it as an environment variable:
-
-```yaml
-env:
-  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-```
-
-Your `config.yaml` must reference the token with `env/CLOUDFLARE_API_TOKEN`.
+Ensure you have created a repository secret for your provider credentials and passed it as an environment variable. See the [Secrets](#secrets) section above for provider-specific examples. Config values that reference environment variables must use the `env/` prefix (e.g. `token: env/CLOUDFLARE_API_TOKEN`).
 
 ### Config file not found
 

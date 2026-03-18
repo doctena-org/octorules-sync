@@ -1,7 +1,7 @@
 # action.yml
 # https://help.github.com/en/actions/building-actions/metadata-syntax-for-github-actions
 name: 'octorules-sync'
-description: 'Run doctena-org/octorules to deploy your Cloudflare Rules config.'
+description: 'Run doctena-org/octorules to deploy your WAF rules config.'
 inputs:
   config_path:
     description: 'Path, relative to your repository root, of the config file
@@ -41,8 +41,8 @@ inputs:
     required: false
     default: 'warning'
   lint_plan:
-    description: 'Cloudflare plan tier override for lint. When empty, auto-detected
-                  from the Cloudflare API per zone.'
+    description: 'Cloudflare plan tier for lint entitlement checks (e.g. "free",
+                  "enterprise"). Defaults to "enterprise". Other providers ignore this.'
     required: false
     default: ''
   add_pr_comment:
