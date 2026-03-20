@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+## [1.5.0] - 2026-03-18
+
+### Fixed
+- PR comments now use HTML plan file when available. Previously only the
+  GITHUB_OUTPUT `plan` variable used the HTML file; `comment.sh` read the
+  raw plan file (text) directly. Now both paths prefer the HTML file.
+
+### Changed
+- Standardize workflow extensions from `.yml` to `.yaml`.
+- README: multi-provider examples, provider-specific install commands,
+  updated troubleshooting and `lint_plan` description.
+
 ## [1.4.0] - 2026-03-17
 
 ### Added
