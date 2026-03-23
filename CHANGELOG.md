@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-03-23
+
 ### Added
 - `audit_log` input: pass `--audit-log PATH` to `octorules sync` for structured
   JSON-lines audit trail of sync results.
