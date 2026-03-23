@@ -45,6 +45,10 @@ inputs:
                   "enterprise"). Defaults to "enterprise". Other providers ignore this.'
     required: false
     default: ''
+  audit_log:
+    description: 'Path to write a JSON-lines audit log of sync results. Empty = disabled.'
+    required: false
+    default: ''
   add_pr_comment:
     description: 'Add plan as a comment, when triggered by a pull request?'
     required: false
@@ -105,6 +109,7 @@ runs:
         CHECKSUM: ${{ inputs.checksum }}
         PHASES: ${{ inputs.phases }}
         ZONES: ${{ inputs.zones }}
+        AUDIT_LOG: ${{ inputs.audit_log }}
       run: ${GITHUB_ACTION_PATH}/scripts/run.sh
       shell: bash
       working-directory: ${{ github.workspace }}

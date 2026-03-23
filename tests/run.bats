@@ -14,6 +14,7 @@ setup() {
   export CHECKSUM=""
   export PHASES=""
   export ZONES=""
+  export AUDIT_LOG=""
 
   # Record file: the mock writes its arguments here.
   export MOCK_ARGS_FILE="${MOCK_DIR}/octorules.args"
@@ -138,6 +139,26 @@ teardown() {
   DOIT="--doit" CHECKSUM="abc123" run bash "${SCRIPT_DIR}/run.sh"
   args="$(cat "${MOCK_ARGS_FILE}")"
   [[ "${args}" == *"--checksum abc123"* ]]
+}
+
+# ---------- Audit log ----------
+
+@test "sync mode with audit log: includes --audit-log PATH" {
+  DOIT="--doit" AUDIT_LOG="/tmp/audit.jsonl" run bash "${SCRIPT_DIR}/run.sh"
+  args="$(cat "${MOCK_ARGS_FILE}")"
+  [[ "${args}" == *"--audit-log /tmp/audit.jsonl"* ]]
+}
+
+@test "sync mode without audit log: omits --audit-log when empty" {
+  DOIT="--doit" AUDIT_LOG="" run bash "${SCRIPT_DIR}/run.sh"
+  args="$(cat "${MOCK_ARGS_FILE}")"
+  [[ "${args}" != *"--audit-log"* ]]
+}
+
+@test "plan mode: does not pass --audit-log" {
+  AUDIT_LOG="/tmp/audit.jsonl" run bash "${SCRIPT_DIR}/run.sh"
+  args="$(cat "${MOCK_ARGS_FILE}")"
+  [[ "${args}" != *"--audit-log"* ]]
 }
 
 # ---------- Zone & phase flags ----------

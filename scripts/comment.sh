@@ -37,6 +37,11 @@ if [ -z "${PR_NUMBER}" ]; then
   exit 0
 fi
 
+if ! [[ "${PR_NUMBER}" =~ ^[0-9]+$ ]]; then
+  echo "FAIL: \$PR_NUMBER must be numeric (got '${PR_NUMBER}')"
+  exit 1
+fi
+
 # Safe for ephemeral GitHub Actions runners — token is destroyed after the job.
 export GH_TOKEN="${PR_COMMENT_TOKEN}"
 

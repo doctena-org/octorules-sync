@@ -8,6 +8,7 @@
 # - CHECKSUM
 # - PHASES
 # - ZONES
+# - AUDIT_LOG (optional)
 
 set -euo pipefail
 # shellcheck source=scripts/lib.sh
@@ -92,6 +93,12 @@ if [ "${_doit}" = "--doit" ]; then
     _cmd+=(--checksum "${_checksum}")
   fi
 
+  _audit_log="${AUDIT_LOG:-}"
+  if [ -n "${_audit_log}" ]; then
+    echo "INFO: Audit log: ${_audit_log}"
+    _cmd+=(--audit-log "${_audit_log}")
+  fi
+
   echo "INFO: Running octorules sync --doit"
   run_capturing "${_planfile}" "${_logfile}" "${_cmd[@]}"
 
@@ -125,6 +132,7 @@ fi
 echo "INFO: octorules output has been written to ${_logfile}"
 
 # Extract checksum from plan logfile (plan mode only).
+# Assumes SHA-256 (64 hex chars). Update regex if octorules changes hash algorithm.
 if [ "${_doit}" != "--doit" ] && [ -f "${_logfile}" ]; then
   _checksum_value="$(grep -oP '^checksum=\K[0-9a-f]{64}' "${_logfile}" || true)"
 fi

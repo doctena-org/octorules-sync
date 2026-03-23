@@ -52,7 +52,10 @@ build_flags() {
 # Fail with a helpful message if octorules is not on PATH.
 require_octorules() {
   if ! command -v octorules >/dev/null 2>&1; then
-    echo "FAIL: octorules not found on PATH. Install it first: pip install 'octorules[wirefilter]'"
+    echo "FAIL: octorules not found on PATH. Install octorules and your provider package:"
+    echo "  pip install octorules octorules-cloudflare[wirefilter]  # Cloudflare"
+    echo "  pip install octorules octorules-aws                     # AWS WAF"
+    echo "  pip install octorules octorules-google                  # Google Cloud Armor"
     exit 1
   fi
 }

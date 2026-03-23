@@ -121,6 +121,9 @@ SCRIPT
   run bash "${MOCK_DIR}/test_require.sh"
   [ "${status}" -eq 1 ]
   [[ "${output}" == *"octorules not found on PATH"* ]]
+  [[ "${output}" == *"octorules-cloudflare"* ]]
+  [[ "${output}" == *"octorules-aws"* ]]
+  [[ "${output}" == *"octorules-google"* ]]
 }
 
 @test "run_capturing: captures stdout to file" {

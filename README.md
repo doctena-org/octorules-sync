@@ -215,7 +215,7 @@ When `lint` is set to `"Yes"`, the action runs `octorules lint --exit-code` befo
 
 ### Wirefilter support (Cloudflare)
 
-When linting Cloudflare rules, installing `octorules[wirefilter]` is **strongly recommended**. Without it, expression validation uses a regex-based fallback that can only extract field and function names. With wirefilter installed, expressions are parsed by Cloudflare's real [wirefilter](https://github.com/cloudflare/wirefilter) engine, enabling detection of syntax errors, unknown fields, type mismatches, and invalid operators that the regex fallback cannot catch.
+When linting Cloudflare rules, installing `octorules-cloudflare[wirefilter]` is **strongly recommended**. Without it, expression validation uses a regex-based fallback that can only extract field and function names. With wirefilter installed, expressions are parsed by Cloudflare's real [wirefilter](https://github.com/cloudflare/wirefilter) engine, enabling detection of syntax errors, unknown fields, type mismatches, and invalid operators that the regex fallback cannot catch.
 
 AWS WAF and Google Cloud Armor providers include their own expression validation (CEL for Cloud Armor) and do not need wirefilter.
 

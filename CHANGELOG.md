@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- `audit_log` input: pass `--audit-log PATH` to `octorules sync` for structured
+  JSON-lines audit trail of sync results.
+- Validate `PR_NUMBER` is numeric before calling GitHub API in `comment.sh`.
+
+### Changed
+- Provider-agnostic error message when `octorules` is not found on PATH. Lists
+  install commands for all three providers (Cloudflare, AWS, Google).
+
 ## [1.5.0] - 2026-03-18
 
 ### Fixed

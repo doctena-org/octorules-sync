@@ -85,6 +85,18 @@ teardown() {
   [[ "${output}" == *"SKIP"* ]]
 }
 
+@test "fail when PR_NUMBER not numeric" {
+  PR_NUMBER="abc" run bash "${SCRIPT_DIR}/comment.sh"
+  [ "${status}" -eq 1 ]
+  [[ "${output}" == *"must be numeric"* ]]
+}
+
+@test "fail when PR_NUMBER contains injection" {
+  PR_NUMBER="42/../../etc" run bash "${SCRIPT_DIR}/comment.sh"
+  [ "${status}" -eq 1 ]
+  [[ "${output}" == *"must be numeric"* ]]
+}
+
 # ---------- New comment ----------
 
 @test "new comment: calls POST when no existing comment" {
