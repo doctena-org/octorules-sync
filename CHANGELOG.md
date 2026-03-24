@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.6.1] - 2026-03-24
+
+### Changed
+- Release workflow now gated on CI (lint + test) via `workflow_call`, matching
+  all other repos in the ecosystem.
+
+### Added
+- Adversarial input BATS tests: validate that shell metacharacters (backticks,
+  `$(...)`, semicolons, pipes, quotes) in `ZONES`, `PHASES`, `CHECKSUM`,
+  `CONFIG_PATH`, and `AUDIT_LOG` are treated as literals, not executed.
+
 ## [1.6.0] - 2026-03-23
 
 ### Added
