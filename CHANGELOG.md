@@ -5,7 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.7.2] - 2026-03-30
+
+### Added
+- Concurrency group on integration workflow to prevent duplicate PR comments.
+- Concurrency group on release workflow to prevent parallel tag updates.
+- Tag SHA verification before force-pushing major version tags.
+- PR comment integration test (CI-only, runs on pull_request events).
+- Detailed wirefilter fallback documentation in README.
+- Checksum drift protection workflow documentation in README.
+
+### Changed
+- Comment body construction extracted to `_append_section()` helper (DRY).
+
+### Fixed
+- Redundant `_sha` fallback assignment removed in `comment.sh`.
 
 ## [1.7.1] - 2026-03-30
 

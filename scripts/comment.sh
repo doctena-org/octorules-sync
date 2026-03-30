@@ -51,51 +51,43 @@ echo "INFO: \$ADD_PR_COMMENT is 'Yes' and \$PR_COMMENT_TOKEN is set."
 _lint_resultfile="${GITHUB_WORKSPACE}/octorules-sync.lint"
 _audit_resultfile="${GITHUB_WORKSPACE}/octorules-sync.audit"
 _sha="$(git log -1 --format='%h' 2>/dev/null)" || _sha="unknown"
-_sha="${_sha:-unknown}"
+
+# Append a result section to the comment body.
+# Usage: _append_section "Title" "resultfile" "EXIT_CODE_VAR" "clean message"
+_append_section() {
+  local _title="$1"
+  local _file="$2"
+  local _exit_var="$3"
+  local _clean_msg="$4"
+  local _exit_code="${!_exit_var:-}"
+
+  if [ -s "${_file}" ]; then
+    _body+="
+### ${_title}
+
+\`\`\`
+$(cat "${_file}")
+\`\`\`
+
+---
+"
+  elif [ "${_exit_code}" = "0" ]; then
+    _body+="
+### ${_title}
+
+${_clean_msg}
+
+---
+"
+  fi
+}
 
 _body="${_marker}
 ## Octorules Plan for ${_sha}
 "
 
-if [ -s "${_audit_resultfile}" ]; then
-  _body+="
-### Audit Results
-
-\`\`\`
-$(cat "${_audit_resultfile}")
-\`\`\`
-
----
-"
-elif [ "${AUDIT_EXIT_CODE:-}" = "0" ]; then
-  _body+="
-### Audit Results
-
-Audit: clean, no findings.
-
----
-"
-fi
-
-if [ -s "${_lint_resultfile}" ]; then
-  _body+="
-### Lint Results
-
-\`\`\`
-$(cat "${_lint_resultfile}")
-\`\`\`
-
----
-"
-elif [ "${LINT_EXIT_CODE:-}" = "0" ]; then
-  _body+="
-### Lint Results
-
-Lint: clean, no issues found.
-
----
-"
-fi
+_append_section "Audit Results" "${_audit_resultfile}" "AUDIT_EXIT_CODE" "Audit: clean, no findings."
+_append_section "Lint Results" "${_lint_resultfile}" "LINT_EXIT_CODE" "Lint: clean, no issues found."
 
 _body+="
 ### Rule Changes

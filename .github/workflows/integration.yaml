@@ -8,6 +8,10 @@ on:
     branches: [main]
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   integration:
     name: End-to-end action test
@@ -303,3 +307,71 @@ jobs:
           test "${{ steps.octorules.outcome }}" = "success"
           test "${{ steps.octorules.outputs.audit_exit_code }}" = "2"
           test -f "${GITHUB_WORKSPACE}/octorules-sync.plan"
+
+  integration-pr-comment:
+    name: PR comment creation (PR context only)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      - name: Create mock octorules binary
+        run: |
+          mkdir -p "${{ runner.temp }}/bin"
+          cat > "${{ runner.temp }}/bin/octorules" <<'MOCK'
+          #!/bin/bash
+          if [[ "$*" == *"plan"* ]]; then
+            echo "checksum=abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234" >&2
+            echo "Zone: test.example.com"
+            echo "  + new_rule (create)"
+          fi
+          exit 0
+          MOCK
+          chmod +x "${{ runner.temp }}/bin/octorules"
+          echo "${{ runner.temp }}/bin" >> "$GITHUB_PATH"
+
+      - name: Create test config
+        run: |
+          cat > config.yaml <<'EOF'
+          providers:
+            cloudflare:
+              token: fake
+            rules:
+              directory: ./rules
+          zones:
+            test.example.com:
+              sources:
+                - rules
+          EOF
+          mkdir -p rules
+          echo '---' > rules/test.example.com.yaml
+
+      - name: Run action with PR comment enabled
+        id: octorules
+        uses: ./
+        with:
+          config_path: config.yaml
+          add_pr_comment: 'Yes'
+          pr_comment_token: ${{ github.token }}
+        env:
+          CLOUDFLARE_API_TOKEN: fake-token-for-test
+
+      - name: Verify comment was created on PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Fetch PR comments and look for the octorules marker
+          pr_num="${{ github.event.pull_request.number }}"
+          repo="${{ github.repository }}"
+          comments="$(gh api "repos/${repo}/issues/${pr_num}/comments" --jq '.[].body')"
+          if echo "${comments}" | grep -q "octorules-sync-plan"; then
+            echo "PASS: PR comment with octorules marker found"
+          else
+            echo "FAIL: No PR comment with octorules marker found"
+            echo "Comments found:"
+            echo "${comments}" | head -20
+            exit 1
+          fi

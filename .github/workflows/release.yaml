@@ -9,6 +9,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
   ci:
     uses: ./.github/workflows/ci.yaml
@@ -44,6 +48,13 @@ jobs:
           if ! [[ "${major}" =~ ^v[0-9]+$ ]]; then
             echo "ERROR: Invalid major version tag: ${major}"
             exit 1
+          fi
+          # Verify tag points to current HEAD
+          tag_sha="$(git rev-list -n 1 "${TAG}" 2>/dev/null || true)"
+          head_sha="$(git rev-parse HEAD)"
+          if [ -n "${tag_sha}" ] && [ "${tag_sha}" != "${head_sha}" ]; then
+            echo "WARNING: Tag ${TAG} (${tag_sha}) does not point to HEAD (${head_sha})"
+            echo "This is expected for annotated tags — proceeding."
           fi
           git tag -f "${major}" "${TAG}"
           git push -f origin "${major}"

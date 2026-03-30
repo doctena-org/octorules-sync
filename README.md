@@ -109,9 +109,33 @@ Default `"No"`.
 
 ### `checksum`
 
-Pass a plan checksum to `octorules sync` for drift protection. When set, octorules verifies the current state matches the checksum before applying changes. Only used when `doit` is `"--doit"`.
+Pass a plan checksum to `octorules sync` for drift protection.  The workflow
+is:
 
-Default `""` (empty string, no checksum verification).
+1. `octorules plan` computes a SHA-256 hash of the planned changes and prints
+   `checksum=<hex>` in its log output.
+2. Between plan and sync, the remote state might change (another deploy,
+   manual edit, API-side update).  This is "drift".
+3. `octorules sync --checksum <hex>` re-plans internally and compares the new
+   hash against the provided one.  If they differ, sync aborts with an error
+   instead of applying stale changes.
+
+Only used when `doit` is `"--doit"`.  Default `""` (empty string, no
+checksum verification).
+
+Example workflow:
+```yaml
+- uses: octorules/octorules-sync@v1
+  id: plan
+  with:
+    mode: plan
+
+- uses: octorules/octorules-sync@v1
+  with:
+    mode: sync
+    doit: "--doit"
+    checksum: ${{ steps.plan.outputs.checksum }}
+```
 
 ### `phases`
 
@@ -246,6 +270,22 @@ When `lint` is set to `"Yes"`, the action runs `octorules lint --exit-code` befo
 ### Wirefilter support (Cloudflare)
 
 When linting Cloudflare rules, installing `octorules-cloudflare[wirefilter]` is **strongly recommended**. Without it, expression validation uses a regex-based fallback that can only extract field and function names. With wirefilter installed, expressions are parsed by Cloudflare's real [wirefilter](https://github.com/cloudflare/wirefilter) engine, enabling detection of syntax errors, unknown fields, type mismatches, and invalid operators that the regex fallback cannot catch.
+
+Specifically, without wirefilter the linter **cannot** detect:
+
+- Syntax errors in expressions (e.g. unmatched parentheses)
+- References to unknown or misspelled fields
+- Type mismatches (e.g. comparing an IP field with a string)
+- Invalid operator usage (e.g. `contains` on a non-string field)
+- Unknown or misspelled function names
+
+The regex-based fallback can only extract field and function names for basic
+checks (e.g. "is this field name known?").  For production use, installing
+wirefilter is strongly recommended.
+
+If wirefilter is unavailable in your CI environment (e.g. musl-based
+containers), expression validation is still performed but with reduced
+coverage.
 
 AWS WAF and Google Cloud Armor providers include their own expression validation (CEL for Cloud Armor) and do not need wirefilter.
 
