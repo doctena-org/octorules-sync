@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.6.2] - 2026-03-30
+
+### Added
+- `audit` input: opt-in `octorules audit` pre-check (IP overlap, CDN range,
+  zone drift analysis) before plan/sync, with `audit_checks` filter.
+- `audit_exit_code` and `audit_results` outputs.
+- `scripts/audit.sh` with BATS test coverage.
+
+### Changed
+- Sync lint guard changed from blacklist (`!= '1'`) to whitelist
+  (`== '' || == '0' || == '2'`); unexpected exit codes now block sync.
+- Audit findings now gate sync in `--doit` mode (same as lint errors).
+  Plan mode always runs regardless of audit results.
+
 ## [1.6.1] - 2026-03-24
 
 ### Changed

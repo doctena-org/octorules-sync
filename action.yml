@@ -45,6 +45,16 @@ inputs:
                   "enterprise"). Defaults to "enterprise". Other providers ignore this.'
     required: false
     default: ''
+  audit:
+    description: 'Run octorules audit (IP overlap, CDN range checks) before plan/sync?
+                  Set "Yes" to enable.'
+    required: false
+    default: 'No'
+  audit_checks:
+    description: 'Space separated list of audit checks to run (e.g.
+                  "ip-overlap cdn-ranges"). Leave empty for all checks.'
+    required: false
+    default: ''
   audit_log:
     description: 'Path to write a JSON-lines audit log of sync results. Empty = disabled.'
     required: false
@@ -79,6 +89,13 @@ outputs:
   lint_results:
     description: 'Lint results text. Empty when disabled or clean.'
     value: ${{ steps.lint.outputs.lint_results }}
+  audit_exit_code:
+    description: 'Exit code from octorules audit: 0 = clean, 1 = findings,
+                  empty = audit disabled.'
+    value: ${{ steps.audit.outputs.audit_exit_code }}
+  audit_results:
+    description: 'Audit results text. Empty when disabled or clean.'
+    value: ${{ steps.audit.outputs.audit_results }}
 
 runs:
   using: 'composite'
@@ -95,13 +112,32 @@ runs:
       run: ${GITHUB_ACTION_PATH}/scripts/lint.sh
       shell: bash
       working-directory: ${{ github.workspace }}
+    - name: Audit octorules rules
+      id: audit
+      env:
+        AUDIT: ${{ inputs.audit }}
+        CONFIG_PATH: ${{ inputs.config_path }}
+        AUDIT_CHECKS: ${{ inputs.audit_checks }}
+        PHASES: ${{ inputs.phases }}
+        ZONES: ${{ inputs.zones }}
+      run: ${GITHUB_ACTION_PATH}/scripts/audit.sh
+      shell: bash
+      working-directory: ${{ github.workspace }}
     - name: Run octorules
       id: run
-      # Run unless sync mode AND lint found errors (exit code 1).
-      # Plan mode always runs; sync mode is blocked only by lint errors, not warnings.
+      # Run unless sync mode AND lint or audit found blocking issues.
+      # Plan mode always runs.  Sync mode proceeds only when:
+      #   - lint is clean (0), warnings-only (2), or disabled ('')
+      #   - AND audit is clean (0) or disabled ('')
       if: >-
         inputs.doit != '--doit'
-        || steps.lint.outputs.lint_exit_code != '1'
+        || (
+          (steps.lint.outputs.lint_exit_code == ''
+           || steps.lint.outputs.lint_exit_code == '0'
+           || steps.lint.outputs.lint_exit_code == '2')
+          && (steps.audit.outputs.audit_exit_code == ''
+              || steps.audit.outputs.audit_exit_code == '0')
+        )
       env:
         CONFIG_PATH: ${{ inputs.config_path }}
         DOIT: ${{ inputs.doit }}
@@ -129,6 +165,12 @@ runs:
       if: ${{ !cancelled() && inputs.lint == 'Yes' && steps.lint.outputs.lint_exit_code == '1' }}
       run: |
         echo "FAIL: octorules lint found errors. See lint results above."
+        exit 1
+      shell: bash
+    - name: Fail on audit findings
+      if: ${{ !cancelled() && inputs.audit == 'Yes' && steps.audit.outputs.audit_exit_code == '1' }}
+      run: |
+        echo "FAIL: octorules audit found findings. See audit results above."
         exit 1
       shell: bash
 branding:

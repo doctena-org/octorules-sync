@@ -164,6 +164,24 @@ Provide a token to use, if you set `add_pr_comment` to `"Yes"`.
 
 Default `""` (empty string, must be provided when `add_pr_comment` is `"Yes"`).
 
+### `audit`
+
+Run `octorules audit` (IP overlap, CDN range, zone drift analysis) before plan/sync? Set `"Yes"` to enable. When enabled, audit findings (exit code 1) are reported in the action output.
+
+Default `"No"`.
+
+### `audit_checks`
+
+Space-separated list of audit checks to run: `ip-overlap`, `ip-shadow`, `cdn-ranges`, `zone-drift`. Leave empty for all checks.
+
+Default `""` (all checks).
+
+### `audit_log`
+
+Path to write a JSON-lines audit log of sync results. Each line is a JSON object with the sync operation details (zone, phase, action, result). Useful for compliance and post-sync analysis.
+
+Default `""` (disabled).
+
 ## Outputs
 
 ### `plan`
@@ -205,6 +223,14 @@ Exit code from `octorules lint`: `0` = clean, `1` = errors, `2` = warnings only,
 ### `lint_results`
 
 Lint results text. Empty when lint is disabled or clean.
+
+### `audit_exit_code`
+
+Exit code from `octorules audit`: `0` = clean (no findings), `1` = findings detected, empty = audit disabled.
+
+### `audit_results`
+
+Audit results text. Empty when audit is disabled or clean.
 
 ## Linting
 
@@ -249,6 +275,7 @@ jobs:
         with:
           config_path: config.yaml
           lint: 'Yes'
+          audit: 'Yes'
           add_pr_comment: 'Yes'
           pr_comment_token: '${{ github.token }}'
         env:
@@ -290,6 +317,7 @@ jobs:
         with:
           config_path: config.yaml
           lint: 'Yes'
+          audit: 'Yes'
           add_pr_comment: 'Yes'
           pr_comment_token: '${{ github.token }}'
         env:
