@@ -55,6 +55,10 @@ inputs:
                   "ip-overlap cdn-ranges"). Leave empty for all checks.'
     required: false
     default: ''
+  audit_severity:
+    description: 'Minimum audit severity: "error", "warning", or "info".'
+    required: false
+    default: 'warning'
   audit_log:
     description: 'Path to write a JSON-lines audit log of sync results. Empty = disabled.'
     required: false
@@ -90,8 +94,8 @@ outputs:
     description: 'Lint results text. Empty when disabled or clean.'
     value: ${{ steps.lint.outputs.lint_results }}
   audit_exit_code:
-    description: 'Exit code from octorules audit: 0 = clean, 1 = findings,
-                  empty = audit disabled.'
+    description: 'Exit code from octorules audit: 0 = clean, 1 = errors,
+                  2 = warnings only, empty = audit disabled.'
     value: ${{ steps.audit.outputs.audit_exit_code }}
   audit_results:
     description: 'Audit results text. Empty when disabled or clean.'
@@ -118,6 +122,7 @@ runs:
         AUDIT: ${{ inputs.audit }}
         CONFIG_PATH: ${{ inputs.config_path }}
         AUDIT_CHECKS: ${{ inputs.audit_checks }}
+        AUDIT_SEVERITY: ${{ inputs.audit_severity }}
         PHASES: ${{ inputs.phases }}
         ZONES: ${{ inputs.zones }}
       run: ${GITHUB_ACTION_PATH}/scripts/audit.sh
@@ -128,7 +133,7 @@ runs:
       # Run unless sync mode AND lint or audit found blocking issues.
       # Plan mode always runs.  Sync mode proceeds only when:
       #   - lint is clean (0), warnings-only (2), or disabled ('')
-      #   - AND audit is clean (0) or disabled ('')
+      #   - AND audit is clean (0), warnings-only (2), or disabled ('')
       if: >-
         inputs.doit != '--doit'
         || (
@@ -136,7 +141,8 @@ runs:
            || steps.lint.outputs.lint_exit_code == '0'
            || steps.lint.outputs.lint_exit_code == '2')
           && (steps.audit.outputs.audit_exit_code == ''
-              || steps.audit.outputs.audit_exit_code == '0')
+              || steps.audit.outputs.audit_exit_code == '0'
+              || steps.audit.outputs.audit_exit_code == '2')
         )
       env:
         CONFIG_PATH: ${{ inputs.config_path }}
@@ -158,6 +164,7 @@ runs:
         PR_NUMBER: ${{ github.event.pull_request.number }}
         GITHUB_REPOSITORY: ${{ github.repository }}
         LINT_EXIT_CODE: ${{ steps.lint.outputs.lint_exit_code }}
+        AUDIT_EXIT_CODE: ${{ steps.audit.outputs.audit_exit_code }}
       run: ${GITHUB_ACTION_PATH}/scripts/comment.sh
       shell: bash
       working-directory: ${{ github.workspace }}
@@ -167,10 +174,10 @@ runs:
         echo "FAIL: octorules lint found errors. See lint results above."
         exit 1
       shell: bash
-    - name: Fail on audit findings
+    - name: Fail on audit errors
       if: ${{ !cancelled() && inputs.audit == 'Yes' && steps.audit.outputs.audit_exit_code == '1' }}
       run: |
-        echo "FAIL: octorules audit found findings. See audit results above."
+        echo "FAIL: octorules audit found errors. See audit results above."
         exit 1
       shell: bash
 branding:

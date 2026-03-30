@@ -302,3 +302,51 @@ PLAN
   [[ "${gh_calls}" == *"a.com"* ]]
   [[ "${gh_calls}" == *"cache_rules"* ]]
 }
+
+# ---------- Audit results in PR comment ----------
+
+@test "audit file with content: comment body contains Audit Results section" {
+  echo "zone-drift: 2 findings" > "${GITHUB_WORKSPACE}/octorules-sync.audit"
+  run bash "${SCRIPT_DIR}/comment.sh"
+  [ "${status}" -eq 0 ]
+  gh_calls="$(cat "${GH_CALLS_FILE}")"
+  [[ "${gh_calls}" == *"Audit Results"* ]]
+  [[ "${gh_calls}" == *"zone-drift: 2 findings"* ]]
+}
+
+@test "audit file empty: comment body omits audit section when audit disabled" {
+  touch "${GITHUB_WORKSPACE}/octorules-sync.audit"
+  AUDIT_EXIT_CODE="" run bash "${SCRIPT_DIR}/comment.sh"
+  [ "${status}" -eq 0 ]
+  gh_calls="$(cat "${GH_CALLS_FILE}")"
+  [[ "${gh_calls}" != *"Audit Results"* ]]
+}
+
+@test "audit clean: comment body shows clean message when audit passed" {
+  touch "${GITHUB_WORKSPACE}/octorules-sync.audit"
+  AUDIT_EXIT_CODE="0" run bash "${SCRIPT_DIR}/comment.sh"
+  [ "${status}" -eq 0 ]
+  gh_calls="$(cat "${GH_CALLS_FILE}")"
+  [[ "${gh_calls}" == *"Audit Results"* ]]
+  [[ "${gh_calls}" == *"clean, no findings"* ]]
+}
+
+@test "audit file missing: comment body omits audit section" {
+  rm -f "${GITHUB_WORKSPACE}/octorules-sync.audit"
+  run bash "${SCRIPT_DIR}/comment.sh"
+  [ "${status}" -eq 0 ]
+  gh_calls="$(cat "${GH_CALLS_FILE}")"
+  [[ "${gh_calls}" != *"Audit Results"* ]]
+}
+
+@test "lint + audit + plan: comment contains all three sections" {
+  echo "E001: error" > "${GITHUB_WORKSPACE}/octorules-sync.lint"
+  echo "ip-overlap: 1 finding" > "${GITHUB_WORKSPACE}/octorules-sync.audit"
+  echo "Plan: 2 changes" > "${GITHUB_WORKSPACE}/octorules-sync.plan"
+  run bash "${SCRIPT_DIR}/comment.sh"
+  [ "${status}" -eq 0 ]
+  gh_calls="$(cat "${GH_CALLS_FILE}")"
+  [[ "${gh_calls}" == *"Lint Results"* ]]
+  [[ "${gh_calls}" == *"Audit Results"* ]]
+  [[ "${gh_calls}" == *"Rule Changes"* ]]
+}

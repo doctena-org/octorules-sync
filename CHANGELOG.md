@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-03-30
+
+### Added
+- `audit_severity` input: minimum severity for audit findings (default: `warning`).
+- Integration test for audit warnings allowing sync to proceed (exit code 2).
+
+### Changed
+- Audit step now passes `--exit-code` and `--severity` flags to `octorules audit`,
+  mirroring the lint step behavior.
+- Sync guard updated: audit exit code 2 (warnings only) no longer blocks sync.
+  Only exit code 1 (errors) prevents deployment.
+- "Fail on audit findings" step renamed to "Fail on audit errors" for clarity.
+
 ## [1.6.2] - 2026-03-30
 
 ### Added

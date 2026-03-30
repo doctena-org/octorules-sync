@@ -166,7 +166,7 @@ Default `""` (empty string, must be provided when `add_pr_comment` is `"Yes"`).
 
 ### `audit`
 
-Run `octorules audit` (IP overlap, CDN range, zone drift analysis) before plan/sync? Set `"Yes"` to enable. When enabled, audit findings (exit code 1) are reported in the action output.
+Run `octorules audit` (IP overlap, CDN range, zone drift analysis) before plan/sync? Set `"Yes"` to enable. When enabled, audit findings are reported in the action output. Only errors (exit code 1) block sync; warnings (exit code 2) are reported but do not prevent deployment.
 
 Default `"No"`.
 
@@ -175,6 +175,10 @@ Default `"No"`.
 Space-separated list of audit checks to run: `ip-overlap`, `ip-shadow`, `cdn-ranges`, `zone-drift`. Leave empty for all checks.
 
 Default `""` (all checks).
+
+### `audit_severity`
+
+Minimum audit severity: `"error"`, `"warning"`, or `"info"`. Controls which findings are displayed. Default: `"warning"`.
 
 ### `audit_log`
 
@@ -226,7 +230,7 @@ Lint results text. Empty when lint is disabled or clean.
 
 ### `audit_exit_code`
 
-Exit code from `octorules audit`: `0` = clean (no findings), `1` = findings detected, empty = audit disabled.
+Exit code from `octorules audit`: `0` = clean, `1` = errors, `2` = warnings only, empty = audit disabled. Only exit code `1` (errors) blocks sync; warnings are reported but do not prevent deployment.
 
 ### `audit_results`
 

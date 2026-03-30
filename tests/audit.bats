@@ -140,12 +140,20 @@ teardown() {
   grep -q "audit_exit_code=0" "${GITHUB_OUTPUT}"
 }
 
-@test "exit 1: script exits 0, output shows findings" {
+@test "exit 1: script exits 0, output shows errors" {
   echo "1" > "${MOCK_EXIT_FILE}"
   run bash "${SCRIPT_DIR}/audit.sh"
   [ "${status}" -eq 0 ]
-  [[ "${output}" == *"findings"* ]]
+  [[ "${output}" == *"errors"* ]]
   grep -q "audit_exit_code=1" "${GITHUB_OUTPUT}"
+}
+
+@test "exit 2: script exits 0, output shows warnings" {
+  echo "2" > "${MOCK_EXIT_FILE}"
+  run bash "${SCRIPT_DIR}/audit.sh"
+  [ "${status}" -eq 0 ]
+  [[ "${output}" == *"warnings"* ]]
+  grep -q "audit_exit_code=2" "${GITHUB_OUTPUT}"
 }
 
 @test "outputs: GITHUB_OUTPUT contains audit_results heredoc" {
@@ -153,4 +161,103 @@ teardown() {
   run bash "${SCRIPT_DIR}/audit.sh"
   [ "${status}" -eq 0 ]
   grep -q "audit_results<<" "${GITHUB_OUTPUT}"
+}
+
+# ---------- Severity and exit-code flags ----------
+
+@test "command: passes --severity and --exit-code flags" {
+  AUDIT_SEVERITY="warning" run bash "${SCRIPT_DIR}/audit.sh"
+  args="$(cat "${MOCK_ARGS_FILE}")"
+  [[ "${args}" == *"--exit-code"* ]]
+  [[ "${args}" == *"--severity warning"* ]]
+}
+
+@test "command: default AUDIT_SEVERITY is warning" {
+  unset AUDIT_SEVERITY
+  run bash "${SCRIPT_DIR}/audit.sh"
+  args="$(cat "${MOCK_ARGS_FILE}")"
+  [[ "${args}" == *"--severity warning"* ]]
+}
+
+@test "command: AUDIT_SEVERITY=error passed correctly" {
+  AUDIT_SEVERITY="error" run bash "${SCRIPT_DIR}/audit.sh"
+  args="$(cat "${MOCK_ARGS_FILE}")"
+  [[ "${args}" == *"--severity error"* ]]
+}
+
+@test "command: warns on unexpected AUDIT_SEVERITY" {
+  AUDIT_SEVERITY="bogus" run bash "${SCRIPT_DIR}/audit.sh"
+  [[ "${output}" == *"WARN"* ]]
+}
+
+# ---------- Severity flag regression tests ----------
+
+@test "command: AUDIT_SEVERITY=info passes --severity info" {
+  AUDIT_SEVERITY="info" run bash "${SCRIPT_DIR}/audit.sh"
+  args="$(cat "${MOCK_ARGS_FILE}")"
+  [[ "${args}" == *"--severity info"* ]]
+}
+
+@test "command: --exit-code is always present" {
+  # Default severity, no checks, no zones/phases — --exit-code must still appear.
+  unset AUDIT_SEVERITY
+  run bash "${SCRIPT_DIR}/audit.sh"
+  args="$(cat "${MOCK_ARGS_FILE}")"
+  [[ "${args}" == *"--exit-code"* ]]
+}
+
+# ---------- Exit code 2 regression ----------
+
+@test "exit 2: GITHUB_OUTPUT contains audit_exit_code=2" {
+  echo "2" > "${MOCK_EXIT_FILE}"
+  run bash "${SCRIPT_DIR}/audit.sh"
+  grep -q "audit_exit_code=2" "${GITHUB_OUTPUT}"
+}
+
+@test "exit 2: script itself exits 0" {
+  echo "2" > "${MOCK_EXIT_FILE}"
+  run bash "${SCRIPT_DIR}/audit.sh"
+  [ "${status}" -eq 0 ]
+}
+
+# ---------- Combination tests ----------
+
+@test "command: all flags together" {
+  AUDIT_SEVERITY="error" AUDIT_CHECKS="ip-overlap cdn-ranges" \
+    ZONES="a.com b.com" PHASES="cache_rules redirect_rules" \
+    run bash "${SCRIPT_DIR}/audit.sh"
+  args="$(cat "${MOCK_ARGS_FILE}")"
+  [[ "${args}" == *"--config=config.yaml"* ]]
+  [[ "${args}" == *"--zone a.com --zone b.com"* ]]
+  [[ "${args}" == *"--phase cache_rules --phase redirect_rules"* ]]
+  [[ "${args}" == *"audit"* ]]
+  [[ "${args}" == *"--exit-code"* ]]
+  [[ "${args}" == *"--severity error"* ]]
+  [[ "${args}" == *"--check ip-overlap --check cdn-ranges"* ]]
+}
+
+@test "command: --severity comes after audit subcommand" {
+  AUDIT_SEVERITY="warning" AUDIT_CHECKS="ip-shadow" \
+    ZONES="z.com" PHASES="http_ratelimit" \
+    run bash "${SCRIPT_DIR}/audit.sh"
+  args="$(cat "${MOCK_ARGS_FILE}")"
+  # Verify ordering: --config and global flags before audit, --severity after audit.
+  [[ "${args}" =~ --config=config\.yaml.*--zone.*--phase.*audit.*--exit-code.*--severity\ warning.*--check\ ip-shadow ]]
+}
+
+# ---------- Edge cases ----------
+
+@test "exit code 3: script exits 0, output shows errors" {
+  echo "3" > "${MOCK_EXIT_FILE}"
+  run bash "${SCRIPT_DIR}/audit.sh"
+  [ "${status}" -eq 0 ]
+  # Unexpected exit code falls into the else branch which says "errors".
+  [[ "${output}" == *"errors"* ]]
+  grep -q "audit_exit_code=3" "${GITHUB_OUTPUT}"
+}
+
+@test "skip: audit_exit_code is empty when skipped" {
+  AUDIT="No" run bash "${SCRIPT_DIR}/audit.sh"
+  [ "${status}" -eq 0 ]
+  grep -q "audit_exit_code=$" "${GITHUB_OUTPUT}"
 }

@@ -49,6 +49,7 @@ echo "INFO: \$ADD_PR_COMMENT is 'Yes' and \$PR_COMMENT_TOKEN is set."
 
 # Construct the comment body with a hidden marker for deduplication.
 _lint_resultfile="${GITHUB_WORKSPACE}/octorules-sync.lint"
+_audit_resultfile="${GITHUB_WORKSPACE}/octorules-sync.audit"
 _sha="$(git log -1 --format='%h' 2>/dev/null)" || _sha="unknown"
 _sha="${_sha:-unknown}"
 
@@ -71,6 +72,26 @@ elif [ "${LINT_EXIT_CODE:-}" = "0" ]; then
 ### Lint Results
 
 Lint: clean, no issues found.
+
+---
+"
+fi
+
+if [ -s "${_audit_resultfile}" ]; then
+  _body+="
+### Audit Results
+
+\`\`\`
+$(cat "${_audit_resultfile}")
+\`\`\`
+
+---
+"
+elif [ "${AUDIT_EXIT_CODE:-}" = "0" ]; then
+  _body+="
+### Audit Results
+
+Audit: clean, no findings.
 
 ---
 "

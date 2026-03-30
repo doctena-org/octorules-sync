@@ -178,3 +178,128 @@ jobs:
         run: |
           test "${{ steps.octorules.outcome }}" = "failure"
           test "${{ steps.octorules.outputs.lint_exit_code }}" = "1"
+
+  integration-audit-findings:
+    name: Audit findings block sync
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      - name: Create mock octorules with audit findings
+        run: |
+          mkdir -p "${{ runner.temp }}/bin"
+          cat > "${{ runner.temp }}/bin/octorules" <<'MOCK'
+          #!/bin/bash
+          if [[ "$*" == *"audit"* ]]; then
+            echo "ip-overlap: 10.0.0.0/8 overlaps in rules block_internal and allow_vpn"
+            echo "cdn-ranges: stale Cloudflare IP ranges detected"
+            exit 1
+          fi
+          if [[ "$*" == *"lint"* ]]; then
+            exit 0
+          fi
+          # sync/plan should not be reached when audit blocks
+          echo "UNEXPECTED: sync/plan ran despite audit findings" >&2
+          exit 0
+          MOCK
+          chmod +x "${{ runner.temp }}/bin/octorules"
+          echo "${{ runner.temp }}/bin" >> "$GITHUB_PATH"
+
+      - name: Create minimal config
+        run: |
+          cat > config.yaml <<'EOF'
+          providers:
+            cloudflare:
+              token: env/CLOUDFLARE_API_TOKEN
+            rules:
+              directory: ./rules
+          zones:
+            test.example.com:
+              sources:
+                - rules
+          EOF
+          mkdir -p rules
+          echo '---' > rules/test.example.com.yaml
+
+      - name: Run action with audit enabled (expect failure)
+        id: octorules
+        uses: ./
+        continue-on-error: true
+        with:
+          config_path: config.yaml
+          doit: '--doit'
+          audit: 'Yes'
+        env:
+          CLOUDFLARE_API_TOKEN: fake-token-for-test
+
+      - name: Verify action failed due to audit findings
+        run: |
+          test "${{ steps.octorules.outcome }}" = "failure"
+          test "${{ steps.octorules.outputs.audit_exit_code }}" = "1"
+
+  integration-audit-warnings-allow-sync:
+    name: Audit warnings do not block sync
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      - name: Create mock octorules with audit warnings
+        run: |
+          mkdir -p "${{ runner.temp }}/bin"
+          cat > "${{ runner.temp }}/bin/octorules" <<'MOCK'
+          #!/bin/bash
+          if [[ "$*" == *"audit"* ]]; then
+            echo "cdn-ranges: Cloudflare IP ranges may be stale (warning)"
+            exit 2
+          fi
+          if [[ "$*" == *"lint"* ]]; then
+            exit 0
+          fi
+          if [[ "$*" == *"plan"* ]]; then
+            echo "checksum=abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789" >&2
+            echo "zone: test.example.com"
+            echo "  cache_rules: 1 create"
+            exit 0
+          fi
+          exit 0
+          MOCK
+          chmod +x "${{ runner.temp }}/bin/octorules"
+          echo "${{ runner.temp }}/bin" >> "$GITHUB_PATH"
+
+      - name: Create minimal config
+        run: |
+          cat > config.yaml <<'EOF'
+          providers:
+            cloudflare:
+              token: env/CLOUDFLARE_API_TOKEN
+            rules:
+              directory: ./rules
+          zones:
+            test.example.com:
+              sources:
+                - rules
+          EOF
+          mkdir -p rules
+          echo '---' > rules/test.example.com.yaml
+
+      - name: Run action with audit enabled (expect success despite warnings)
+        id: octorules
+        uses: ./
+        continue-on-error: true
+        with:
+          config_path: config.yaml
+          doit: '--doit'
+          audit: 'Yes'
+          lint: 'Yes'
+        env:
+          CLOUDFLARE_API_TOKEN: fake-token-for-test
+
+      - name: Verify action succeeded (warnings do not block sync)
+        run: |
+          echo "outcome=${{ steps.octorules.outcome }}"
+          echo "audit_exit_code=${{ steps.octorules.outputs.audit_exit_code }}"
+          test "${{ steps.octorules.outcome }}" = "success"
+          test "${{ steps.octorules.outputs.audit_exit_code }}" = "2"
+          test -f "${GITHUB_WORKSPACE}/octorules-sync.plan"
