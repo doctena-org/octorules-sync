@@ -2,10 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/),
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
+
+## [1.7.1] - 2026-03-30
+
+### Added
+- Audit results section in PR comments (mirrors lint pattern).
+
+### Fixed
+- PR comment section order: Audit Results → Lint Results → Rule Changes.
+- Missing blank line before "Rule Changes" heading in PR comment.
 
 ## [1.7.0] - 2026-03-30
 

@@ -57,26 +57,6 @@ _body="${_marker}
 ## Octorules Plan for ${_sha}
 "
 
-if [ -s "${_lint_resultfile}" ]; then
-  _body+="
-### Lint Results
-
-\`\`\`
-$(cat "${_lint_resultfile}")
-\`\`\`
-
----
-"
-elif [ "${LINT_EXIT_CODE:-}" = "0" ]; then
-  _body+="
-### Lint Results
-
-Lint: clean, no issues found.
-
----
-"
-fi
-
 if [ -s "${_audit_resultfile}" ]; then
   _body+="
 ### Audit Results
@@ -97,7 +77,28 @@ Audit: clean, no findings.
 "
 fi
 
-_body+="### Rule Changes
+if [ -s "${_lint_resultfile}" ]; then
+  _body+="
+### Lint Results
+
+\`\`\`
+$(cat "${_lint_resultfile}")
+\`\`\`
+
+---
+"
+elif [ "${LINT_EXIT_CODE:-}" = "0" ]; then
+  _body+="
+### Lint Results
+
+Lint: clean, no issues found.
+
+---
+"
+fi
+
+_body+="
+### Rule Changes
 
 "
 

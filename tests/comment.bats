@@ -339,14 +339,20 @@ PLAN
   [[ "${gh_calls}" != *"Audit Results"* ]]
 }
 
-@test "lint + audit + plan: comment contains all three sections" {
+@test "audit + lint + plan: comment contains all three sections in order" {
   echo "E001: error" > "${GITHUB_WORKSPACE}/octorules-sync.lint"
   echo "ip-overlap: 1 finding" > "${GITHUB_WORKSPACE}/octorules-sync.audit"
   echo "Plan: 2 changes" > "${GITHUB_WORKSPACE}/octorules-sync.plan"
   run bash "${SCRIPT_DIR}/comment.sh"
   [ "${status}" -eq 0 ]
   gh_calls="$(cat "${GH_CALLS_FILE}")"
-  [[ "${gh_calls}" == *"Lint Results"* ]]
   [[ "${gh_calls}" == *"Audit Results"* ]]
+  [[ "${gh_calls}" == *"Lint Results"* ]]
   [[ "${gh_calls}" == *"Rule Changes"* ]]
+  # Verify order: Audit before Lint before Rule Changes
+  audit_pos="${gh_calls%%Audit Results*}"
+  lint_pos="${gh_calls%%Lint Results*}"
+  rules_pos="${gh_calls%%Rule Changes*}"
+  [ "${#audit_pos}" -lt "${#lint_pos}" ]
+  [ "${#lint_pos}" -lt "${#rules_pos}" ]
 }
