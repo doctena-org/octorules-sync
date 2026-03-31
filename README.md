@@ -125,14 +125,14 @@ checksum verification).
 
 Example workflow:
 ```yaml
-- uses: octorules/octorules-sync@v1
+- uses: doctena-org/octorules-sync@v1
   id: plan
   with:
-    mode: plan
+    config_path: config.yaml
 
-- uses: octorules/octorules-sync@v1
+- uses: doctena-org/octorules-sync@v1
   with:
-    mode: sync
+    config_path: config.yaml
     doit: "--doit"
     checksum: ${{ steps.plan.outputs.checksum }}
 ```

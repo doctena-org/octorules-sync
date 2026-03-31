@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.7.3] - 2026-03-31
+
+### Fixed
+- Checksum output test now uses a proper 64-character hex checksum with anchored assertions.
+- README examples corrected: use `doctena-org/octorules-sync@v1` (was `octorules/octorules-sync@v1`) and replace nonexistent `mode` input with `config_path`.
+- PR comment body is now truncated when it exceeds GitHub's 65,536-character limit, preventing API errors on large plans.
+
 ## [1.7.2] - 2026-03-30
 
 ### Added

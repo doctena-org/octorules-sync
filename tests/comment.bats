@@ -18,6 +18,9 @@ setup() {
   export GH_CALLS_FILE="${MOCK_DIR}/gh.calls"
   touch "${GH_CALLS_FILE}"
 
+  # File to capture the posted comment body (extracted from -f body=...).
+  export GH_BODY_FILE="${MOCK_DIR}/gh.body"
+
   # File to control gh list response (empty = no existing comment).
   export GH_LIST_RESPONSE_FILE="${MOCK_DIR}/gh.list_response"
   echo "" > "${GH_LIST_RESPONSE_FILE}"
@@ -33,6 +36,14 @@ MOCK
   cat > "${MOCK_DIR}/gh" <<'MOCK'
 #!/bin/bash
 echo "$@" >> "${GH_CALLS_FILE}"
+# Capture the body argument for size/content verification.
+for arg in "$@"; do
+  case "${arg}" in
+    body=*)
+      printf '%s' "${arg#body=}" > "${GH_BODY_FILE}"
+      ;;
+  esac
+done
 # If this is a paginated list call, return the configured response.
 if [[ "$*" == *"--paginate"* ]]; then
   cat "${GH_LIST_RESPONSE_FILE}"
@@ -355,4 +366,47 @@ PLAN
   rules_pos="${gh_calls%%Rule Changes*}"
   [ "${#audit_pos}" -lt "${#lint_pos}" ]
   [ "${#lint_pos}" -lt "${#rules_pos}" ]
+}
+
+# ---------- Truncation for GitHub's 65,536-char limit ----------
+
+@test "truncation: body exceeding 65000 chars is truncated" {
+  # Generate a plan file large enough to push the body over 65000 chars.
+  python3 -c "print('x' * 70000)" > "${GITHUB_WORKSPACE}/octorules-sync.plan"
+  run bash "${SCRIPT_DIR}/comment.sh"
+  [ "${status}" -eq 0 ]
+  # The posted body must not exceed 65000 characters.
+  body="$(cat "${GH_BODY_FILE}")"
+  [ "${#body}" -le 65000 ]
+}
+
+@test "truncation: truncated body contains the truncation notice" {
+  python3 -c "print('x' * 70000)" > "${GITHUB_WORKSPACE}/octorules-sync.plan"
+  run bash "${SCRIPT_DIR}/comment.sh"
+  [ "${status}" -eq 0 ]
+  body="$(cat "${GH_BODY_FILE}")"
+  [[ "${body}" == *"Comment truncated (exceeded GitHub"* ]]
+}
+
+@test "truncation: truncated body still starts with the marker" {
+  python3 -c "print('x' * 70000)" > "${GITHUB_WORKSPACE}/octorules-sync.plan"
+  run bash "${SCRIPT_DIR}/comment.sh"
+  [ "${status}" -eq 0 ]
+  body="$(cat "${GH_BODY_FILE}")"
+  [[ "${body}" == "<!-- octorules-sync-plan -->"* ]]
+}
+
+@test "truncation: emits WARN to stdout" {
+  python3 -c "print('x' * 70000)" > "${GITHUB_WORKSPACE}/octorules-sync.plan"
+  run bash "${SCRIPT_DIR}/comment.sh"
+  [ "${status}" -eq 0 ]
+  [[ "${output}" == *"WARN: Comment body truncated"* ]]
+}
+
+@test "truncation: body under 65000 chars is not truncated" {
+  echo "Short plan" > "${GITHUB_WORKSPACE}/octorules-sync.plan"
+  run bash "${SCRIPT_DIR}/comment.sh"
+  [ "${status}" -eq 0 ]
+  body="$(cat "${GH_BODY_FILE}")"
+  [[ "${body}" != *"Comment truncated"* ]]
 }

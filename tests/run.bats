@@ -222,18 +222,21 @@ MOCK
 # ---------- Checksum output ----------
 
 @test "plan mode: GITHUB_OUTPUT contains checksum when octorules emits it" {
-  # Mock writes a checksum line to stderr (the logfile).
-  cat > "${MOCK_DIR}/octorules" <<'MOCK'
+  # Mock writes a 64-char hex checksum line to stderr (the logfile).
+  # Must be exactly 64 hex chars — run.sh extracts only SHA-256 length checksums.
+  _mock_checksum="a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f67890"
+  cat > "${MOCK_DIR}/octorules" <<MOCK
 #!/bin/bash
-echo "$@" > "${MOCK_ARGS_FILE}"
-echo "checksum=abc123def456" >&2
+echo "\$@" > "\${MOCK_ARGS_FILE}"
+echo "checksum=${_mock_checksum}" >&2
 exit 0
 MOCK
   chmod +x "${MOCK_DIR}/octorules"
 
   run bash "${SCRIPT_DIR}/run.sh"
   [ "${status}" -eq 0 ]
-  grep -q "checksum=abc123def456" "${GITHUB_OUTPUT}"
+  # Verify the checksum appears as an output variable line, not inside the log heredoc.
+  grep -q "^checksum=${_mock_checksum}$" "${GITHUB_OUTPUT}"
 }
 
 @test "plan mode: GITHUB_OUTPUT contains empty checksum when octorules does not emit it" {
