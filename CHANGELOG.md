@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.8.0] - 2026-04-02
+
+### Changed
+- **Breaking:** `doit` input now only accepts `""` (empty) or `"--doit"`. Other
+  values (e.g. `"Yes"`, `"true"`) now fail immediately instead of silently
+  running in plan mode.
+- **Breaking:** `force` input default changed from `"No"` to `""` (empty). Only
+  `""` or `"Yes"` are accepted; `"No"` now fails. Update your workflows if you
+  explicitly set `force: "No"`.
+- Checksum extraction regex accepts 32–128 hex characters instead of exactly 64,
+  for forward-compatibility with future hash algorithm changes.
+
+### Added
+- Config file existence check before running octorules — fails fast with a clear
+  error instead of a generic YAML parse failure.
+- Pre-commit hook (`shellcheck` + `yamllint`).
+
 ## [1.7.3] - 2026-03-31
 
 ### Fixed

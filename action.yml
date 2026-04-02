@@ -9,14 +9,13 @@ inputs:
     required: false
     default: 'config.yaml'
   doit:
-    description: 'Really do it? Set "--doit" to apply changes; Any other
-                  string to only plan.'
+    description: 'Set "--doit" to apply changes, leave empty to plan only.'
     required: false
     default: ''
   force:
-    description: 'Run octorules sync with --force to bypass safety thresholds?'
+    description: 'Set "Yes" to bypass safety thresholds, leave empty to enforce them.'
     required: false
-    default: 'No'
+    default: ''
   checksum:
     description: 'Pass a plan checksum to octorules sync for drift protection.
                   Only used when doit is "--doit".'

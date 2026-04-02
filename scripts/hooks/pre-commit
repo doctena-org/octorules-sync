@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Pre-commit hook: shell lint + YAML lint.
+#
+# Install: from the repo root, run:
+#   ln -sf ../../scripts/hooks/pre-commit .git/hooks/pre-commit
+set -euo pipefail
+
+shellcheck scripts/*.sh
+yamllint --no-warnings ./

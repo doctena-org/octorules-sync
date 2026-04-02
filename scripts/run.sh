@@ -27,9 +27,21 @@ _checksum="${CHECKSUM}"
 _phases="${PHASES}"
 _zones="${ZONES}"
 
-# Warn on unexpected input values (don't fail — backwards compat).
-warn_unexpected "DOIT" "${_doit}" "--doit"
-warn_unexpected "FORCE" "${_force}" "Yes No"
+# Strict validation of action inputs to prevent silent plan-instead-of-sync.
+if [ -n "${_doit}" ] && [ "${_doit}" != "--doit" ]; then
+  echo "FAIL: \$DOIT must be empty or '--doit' (got '${_doit}')"
+  exit 1
+fi
+if [ -n "${_force}" ] && [ "${_force}" != "Yes" ]; then
+  echo "FAIL: \$FORCE must be empty or 'Yes' (got '${_force}')"
+  exit 1
+fi
+
+# Validate config file exists before running octorules.
+if [ ! -f "${_config_path}" ]; then
+  echo "FAIL: config file not found: ${_config_path}"
+  exit 1
+fi
 
 # Output files.
 _logfile="${GITHUB_WORKSPACE}/octorules-sync.log"
@@ -132,9 +144,9 @@ fi
 echo "INFO: octorules output has been written to ${_logfile}"
 
 # Extract checksum from plan logfile (plan mode only).
-# Assumes SHA-256 (64 hex chars). Update regex if octorules changes hash algorithm.
+# Accepts 32-128 hex chars to be forward-compatible with hash algorithm changes.
 if [ "${_doit}" != "--doit" ] && [ -f "${_logfile}" ]; then
-  _checksum_value="$(grep -oP '^checksum=\K[0-9a-f]{64}' "${_logfile}" || true)"
+  _checksum_value="$(grep -oP '^checksum=\K[0-9a-f]{32,128}' "${_logfile}" || true)"
 fi
 
 _write_outputs with_checksum

@@ -8,13 +8,16 @@ setup() {
   export MOCK_DIR="$(mktemp -d)"
   export GITHUB_WORKSPACE="$(mktemp -d)"
   export GITHUB_OUTPUT="$(mktemp)"
-  export CONFIG_PATH="config.yaml"
   export DOIT=""
-  export FORCE="No"
+  export FORCE=""
   export CHECKSUM=""
   export PHASES=""
   export ZONES=""
   export AUDIT_LOG=""
+
+  # Create a dummy config file so the existence check passes.
+  touch "${GITHUB_WORKSPACE}/config.yaml"
+  export CONFIG_PATH="${GITHUB_WORKSPACE}/config.yaml"
 
   export MOCK_ARGS_FILE="${MOCK_DIR}/octorules.args"
   export MOCK_EXIT_FILE="${MOCK_DIR}/octorules.exit"
@@ -93,10 +96,12 @@ teardown() {
 # ---------- run.sh: CONFIG_PATH with spaces ----------
 
 @test "run.sh: CONFIG_PATH with spaces is passed correctly" {
-  CONFIG_PATH="path with spaces/config.yaml" run bash "${SCRIPT_DIR}/run.sh"
+  mkdir -p "${GITHUB_WORKSPACE}/path with spaces"
+  touch "${GITHUB_WORKSPACE}/path with spaces/config.yaml"
+  CONFIG_PATH="${GITHUB_WORKSPACE}/path with spaces/config.yaml" run bash "${SCRIPT_DIR}/run.sh"
   args="$(cat "${MOCK_ARGS_FILE}")"
   # The --config value should include the full path with spaces.
-  [[ "${args}" == *"--config=path with spaces/config.yaml"* ]]
+  [[ "${args}" == *"--config=${GITHUB_WORKSPACE}/path with spaces/config.yaml"* ]]
 }
 
 # ---------- run.sh: ZONES with shell metacharacters ----------

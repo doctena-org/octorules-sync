@@ -8,9 +8,8 @@ setup() {
   export MOCK_DIR="$(mktemp -d)"
   export GITHUB_WORKSPACE="$(mktemp -d)"
   export GITHUB_OUTPUT="$(mktemp)"
-  export CONFIG_PATH="config.yaml"
   export DOIT=""
-  export FORCE="No"
+  export FORCE=""
   export CHECKSUM=""
   export PHASES=""
   export ZONES=""
@@ -32,6 +31,10 @@ MOCK
 
   # Prepend mock dir to PATH.
   export PATH="${MOCK_DIR}:${PATH}"
+
+  # Create a dummy config file so the existence check passes.
+  touch "${GITHUB_WORKSPACE}/config.yaml"
+  export CONFIG_PATH="${GITHUB_WORKSPACE}/config.yaml"
 
   # Resolve the script under test.
   export SCRIPT_DIR
@@ -65,13 +68,62 @@ teardown() {
   [[ "${output}" == *"GITHUB_OUTPUT"* ]]
 }
 
+# ---------- Strict input validation ----------
+
+@test "fails when DOIT has unexpected value" {
+  DOIT="Yes" run bash "${SCRIPT_DIR}/run.sh"
+  [ "${status}" -ne 0 ]
+  [[ "${output}" == *"DOIT must be empty or '--doit'"* ]]
+}
+
+@test "fails when DOIT is 'true'" {
+  DOIT="true" run bash "${SCRIPT_DIR}/run.sh"
+  [ "${status}" -ne 0 ]
+  [[ "${output}" == *"DOIT must be empty or '--doit'"* ]]
+}
+
+@test "fails when DOIT is '--DOIT' (wrong case)" {
+  DOIT="--DOIT" run bash "${SCRIPT_DIR}/run.sh"
+  [ "${status}" -ne 0 ]
+}
+
+@test "fails when FORCE has unexpected value" {
+  DOIT="--doit" FORCE="No" run bash "${SCRIPT_DIR}/run.sh"
+  [ "${status}" -ne 0 ]
+  [[ "${output}" == *"FORCE must be empty or 'Yes'"* ]]
+}
+
+@test "fails when FORCE is 'yes' (lowercase)" {
+  DOIT="--doit" FORCE="yes" run bash "${SCRIPT_DIR}/run.sh"
+  [ "${status}" -ne 0 ]
+  [[ "${output}" == *"FORCE must be empty or 'Yes'"* ]]
+}
+
+@test "fails when FORCE is 'YES' (uppercase)" {
+  DOIT="--doit" FORCE="YES" run bash "${SCRIPT_DIR}/run.sh"
+  [ "${status}" -ne 0 ]
+  [[ "${output}" == *"FORCE must be empty or 'Yes'"* ]]
+}
+
+@test "fails when config file does not exist" {
+  CONFIG_PATH="/nonexistent/config.yaml" run bash "${SCRIPT_DIR}/run.sh"
+  [ "${status}" -ne 0 ]
+  [[ "${output}" == *"config file not found"* ]]
+}
+
+@test "fails when config path is a directory" {
+  CONFIG_PATH="${GITHUB_WORKSPACE}" run bash "${SCRIPT_DIR}/run.sh"
+  [ "${status}" -ne 0 ]
+  [[ "${output}" == *"config file not found"* ]]
+}
+
 # ---------- Plan mode ----------
 
 @test "plan mode: calls octorules plan with --config and --checksum" {
   DOIT="" run bash "${SCRIPT_DIR}/run.sh"
   args="$(cat "${MOCK_ARGS_FILE}")"
   [[ "${args}" == *"plan"* ]]
-  [[ "${args}" == *"--config=config.yaml"* ]]
+  [[ "${args}" == *"--config="* ]]
   [[ "${args}" == *"--checksum"* ]]
   [[ "${args}" != *"--doit"* ]]
   [[ "${args}" != *"--format"* ]]
@@ -81,14 +133,14 @@ teardown() {
   DOIT="" ZONES="a.com" PHASES="cache_rules" run bash "${SCRIPT_DIR}/run.sh"
   args="$(cat "${MOCK_ARGS_FILE}")"
   # --config, --zone, --phase must appear before "plan"
-  [[ "${args}" =~ --config=config\.yaml.*--zone.*--phase.*plan ]]
+  [[ "${args}" =~ --config=.*--zone.*--phase.*plan ]]
 }
 
 @test "sync mode: global flags come before subcommand" {
   DOIT="--doit" ZONES="a.com" PHASES="cache_rules" run bash "${SCRIPT_DIR}/run.sh"
   args="$(cat "${MOCK_ARGS_FILE}")"
   # --config, --zone, --phase must appear before "sync"
-  [[ "${args}" =~ --config=config\.yaml.*--zone.*--phase.*sync ]]
+  [[ "${args}" =~ --config=.*--zone.*--phase.*sync ]]
 }
 
 @test "plan mode exit 0: succeeds with no changes message" {
@@ -119,7 +171,7 @@ teardown() {
   args="$(cat "${MOCK_ARGS_FILE}")"
   [[ "${args}" == *"sync"* ]]
   [[ "${args}" == *"--doit"* ]]
-  [[ "${args}" == *"--config=config.yaml"* ]]
+  [[ "${args}" == *"--config="* ]]
   [[ "${args}" != *"--format"* ]]
 }
 
@@ -129,8 +181,8 @@ teardown() {
   [[ "${args}" == *"--force"* ]]
 }
 
-@test "sync mode without --force: omits --force when FORCE=No" {
-  DOIT="--doit" FORCE="No" run bash "${SCRIPT_DIR}/run.sh"
+@test "sync mode without --force: omits --force when FORCE is empty" {
+  DOIT="--doit" FORCE="" run bash "${SCRIPT_DIR}/run.sh"
   args="$(cat "${MOCK_ARGS_FILE}")"
   [[ "${args}" != *"--force"* ]]
 }

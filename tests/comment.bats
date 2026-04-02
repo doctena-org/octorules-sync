@@ -410,3 +410,33 @@ PLAN
   body="$(cat "${GH_BODY_FILE}")"
   [[ "${body}" != *"Comment truncated"* ]]
 }
+
+# ---------- HTML plan file preference ----------
+
+@test "html plan file: preferred over text when present" {
+  echo "Text plan content" > "${GITHUB_WORKSPACE}/octorules-sync.plan"
+  echo "<table><tr><td>HTML plan</td></tr></table>" > "${GITHUB_WORKSPACE}/octorules-plan.html"
+  run bash "${SCRIPT_DIR}/comment.sh"
+  [ "${status}" -eq 0 ]
+  body="$(cat "${GH_BODY_FILE}")"
+  [[ "${body}" == *"HTML plan"* ]]
+  [[ "${body}" != *"Text plan content"* ]]
+}
+
+@test "html plan file: falls back to text when html empty" {
+  echo "Fallback text plan" > "${GITHUB_WORKSPACE}/octorules-sync.plan"
+  touch "${GITHUB_WORKSPACE}/octorules-plan.html"
+  run bash "${SCRIPT_DIR}/comment.sh"
+  [ "${status}" -eq 0 ]
+  body="$(cat "${GH_BODY_FILE}")"
+  [[ "${body}" == *"Fallback text plan"* ]]
+}
+
+@test "html plan file: falls back to text when html absent" {
+  echo "Only text plan" > "${GITHUB_WORKSPACE}/octorules-sync.plan"
+  rm -f "${GITHUB_WORKSPACE}/octorules-plan.html"
+  run bash "${SCRIPT_DIR}/comment.sh"
+  [ "${status}" -eq 0 ]
+  body="$(cat "${GH_BODY_FILE}")"
+  [[ "${body}" == *"Only text plan"* ]]
+}

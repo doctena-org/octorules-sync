@@ -97,15 +97,17 @@ Default `"config.yaml"`.
 
 ### `doit`
 
-Really do it? Set `"--doit"` to apply changes; Any other string to only plan.
+Set `"--doit"` to apply changes, leave empty to plan only. Only `""` and
+`"--doit"` are accepted — any other value fails immediately.
 
-Default `""` (empty string, plan only).
+Default `""` (plan only).
 
 ### `force`
 
-Run octorules sync with `--force` to bypass safety thresholds? Set `"Yes"` to enable.
+Set `"Yes"` to bypass safety thresholds, leave empty to enforce them. Only `""`
+and `"Yes"` are accepted.
 
-Default `"No"`.
+Default `""` (thresholds enforced).
 
 ### `checksum`
 
