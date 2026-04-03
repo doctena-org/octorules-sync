@@ -33,16 +33,10 @@ _audit_logfile="${GITHUB_WORKSPACE}/octorules-sync.audit.log"
 _delim="$(random_delim OCTORULES_AUDIT_EOF)"
 rm -f "${_audit_resultfile}" "${_audit_logfile}"
 
-# Build repeated flags from space-separated inputs (populated via nameref in build_flags).
-_zone_flags=()
-_phase_flags=()
-build_flags _zone_flags "--zone" "${ZONES}"
-build_flags _phase_flags "--phase" "${PHASES}"
-
-# Global flags before subcommand. Always --exit-code in CI.
-_cmd=(octorules --config="${CONFIG_PATH}")
-[ ${#_zone_flags[@]} -gt 0 ] && _cmd+=("${_zone_flags[@]}")
-[ ${#_phase_flags[@]} -gt 0 ] && _cmd+=("${_phase_flags[@]}")
+# Build common octorules command prefix with global flags.
+_cmd=()
+# shellcheck disable=SC2153  # ZONES/PHASES are env vars from action.yml
+build_octorules_cmd _cmd "${CONFIG_PATH}" "${ZONES}" "${PHASES}"
 _audit_severity="${AUDIT_SEVERITY:-warning}"
 _cmd+=(audit --exit-code --severity "${_audit_severity}")
 

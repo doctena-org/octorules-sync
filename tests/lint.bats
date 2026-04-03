@@ -139,6 +139,13 @@ teardown() {
   [[ "${args}" == *"--severity error"* ]]
 }
 
+@test "command: default LINT_SEVERITY is warning" {
+  unset LINT_SEVERITY
+  run bash "${SCRIPT_DIR}/lint.sh"
+  args="$(cat "${MOCK_ARGS_FILE}")"
+  [[ "${args}" == *"--severity warning"* ]]
+}
+
 @test "command: custom plan tier" {
   LINT_PLAN="free" run bash "${SCRIPT_DIR}/lint.sh"
   args="$(cat "${MOCK_ARGS_FILE}")"

@@ -24,7 +24,9 @@ _config_path="${CONFIG_PATH}"
 _doit="${DOIT}"
 _force="${FORCE}"
 _checksum="${CHECKSUM}"
+# shellcheck disable=SC2153
 _phases="${PHASES}"
+# shellcheck disable=SC2153
 _zones="${ZONES}"
 
 # Strict validation of action inputs to prevent silent plan-instead-of-sync.
@@ -58,21 +60,13 @@ touch "${_logfile}" "${_planfile}"
 
 echo "INFO: config_path: ${_config_path}"
 
-# Build repeated flags from space-separated inputs (populated via nameref in build_flags).
-_zone_flags=()
-_phase_flags=()
-build_flags _zone_flags "--zone" "${_zones}"
-build_flags _phase_flags "--phase" "${_phases}"
-
 # Write GITHUB_OUTPUT variables. Called on both success and failure paths.
 # Pass "with_checksum" to include the checksum line (success path only).
 # For the "plan" output: prefer the HTML file (renders tables in PR comments),
 # fall back to the captured stdout (text plan).
 _write_outputs() {
-  local _plan_source="${_planfile}"
-  if [ -s "${_htmlfile}" ]; then
-    _plan_source="${_htmlfile}"
-  fi
+  local _plan_source
+  _plan_source="$(prefer_html_plan "${_planfile}" "${_htmlfile}")"
   {
     echo "exit_code=${_exit_code}"
     if [ "${1:-}" = "with_checksum" ]; then
@@ -89,10 +83,8 @@ _write_outputs() {
 
 if [ "${_doit}" = "--doit" ]; then
   # --- Apply mode: octorules sync --doit ---
-  # Global flags (--config, --zone, --phase) must come before the subcommand.
-  _cmd=(octorules --config="${_config_path}")
-  [ ${#_zone_flags[@]} -gt 0 ] && _cmd+=("${_zone_flags[@]}")
-  [ ${#_phase_flags[@]} -gt 0 ] && _cmd+=("${_phase_flags[@]}")
+  _cmd=()
+  build_octorules_cmd _cmd "${_config_path}" "${_zones}" "${_phases}"
   _cmd+=(sync --doit)
 
   if [ "${_force}" = "Yes" ]; then
@@ -121,10 +113,8 @@ if [ "${_doit}" = "--doit" ]; then
   fi
 else
   # --- Plan mode: octorules plan ---
-  # Global flags (--config, --zone, --phase) must come before the subcommand.
-  _cmd=(octorules --config="${_config_path}")
-  [ ${#_zone_flags[@]} -gt 0 ] && _cmd+=("${_zone_flags[@]}")
-  [ ${#_phase_flags[@]} -gt 0 ] && _cmd+=("${_phase_flags[@]}")
+  _cmd=()
+  build_octorules_cmd _cmd "${_config_path}" "${_zones}" "${_phases}"
   _cmd+=(plan --checksum)
 
   echo "INFO: Running octorules plan"

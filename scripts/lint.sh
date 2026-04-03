@@ -20,7 +20,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 require_octorules
 
 # Warn on unexpected input values (don't fail — backwards compat).
-warn_unexpected "LINT_SEVERITY" "${LINT_SEVERITY}" "error warning info"
+warn_unexpected "LINT_SEVERITY" "${LINT_SEVERITY:-}" "error warning info"
 
 if [ "${LINT}" != "Yes" ]; then
   echo "SKIP: \$LINT is not 'Yes'."
@@ -33,17 +33,12 @@ _lint_logfile="${GITHUB_WORKSPACE}/octorules-sync.lint.log"
 _delim="$(random_delim OCTORULES_LINT_EOF)"
 rm -f "${_lint_resultfile}" "${_lint_logfile}"
 
-# Build repeated flags from space-separated inputs (populated via nameref in build_flags).
-_zone_flags=()
-_phase_flags=()
-build_flags _zone_flags "--zone" "${ZONES}"
-build_flags _phase_flags "--phase" "${PHASES}"
-
-# Global flags before subcommand. Always --exit-code in CI.
-_cmd=(octorules --config="${CONFIG_PATH}")
-[ ${#_zone_flags[@]} -gt 0 ] && _cmd+=("${_zone_flags[@]}")
-[ ${#_phase_flags[@]} -gt 0 ] && _cmd+=("${_phase_flags[@]}")
-_cmd+=(lint --exit-code --severity "${LINT_SEVERITY}")
+# Build common octorules command prefix with global flags.
+_cmd=()
+# shellcheck disable=SC2153  # ZONES/PHASES are env vars from action.yml
+build_octorules_cmd _cmd "${CONFIG_PATH}" "${ZONES}" "${PHASES}"
+_lint_severity="${LINT_SEVERITY:-warning}"
+_cmd+=(lint --exit-code --severity "${_lint_severity}")
 
 if [ -n "${LINT_PLAN}" ]; then
   _cmd+=(--plan "${LINT_PLAN}")

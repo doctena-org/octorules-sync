@@ -168,6 +168,64 @@ SCRIPT
   [ -z "${output}" ]
 }
 
+# ---------- prefer_html_plan ----------
+
+@test "prefer_html_plan: returns html when present and non-empty" {
+  echo "<h2>html</h2>" > "${MOCK_DIR}/plan.html"
+  echo "text plan" > "${MOCK_DIR}/plan.txt"
+  result="$(prefer_html_plan "${MOCK_DIR}/plan.txt" "${MOCK_DIR}/plan.html")"
+  [ "${result}" = "${MOCK_DIR}/plan.html" ]
+}
+
+@test "prefer_html_plan: returns text when html is empty" {
+  touch "${MOCK_DIR}/plan.html"
+  echo "text plan" > "${MOCK_DIR}/plan.txt"
+  result="$(prefer_html_plan "${MOCK_DIR}/plan.txt" "${MOCK_DIR}/plan.html")"
+  [ "${result}" = "${MOCK_DIR}/plan.txt" ]
+}
+
+@test "prefer_html_plan: returns text when html does not exist" {
+  echo "text plan" > "${MOCK_DIR}/plan.txt"
+  result="$(prefer_html_plan "${MOCK_DIR}/plan.txt" "${MOCK_DIR}/nonexistent.html")"
+  [ "${result}" = "${MOCK_DIR}/plan.txt" ]
+}
+
+# ---------- build_octorules_cmd ----------
+
+@test "build_octorules_cmd: builds base command with config only" {
+  build_octorules_cmd my_cmd "config.yaml" "" ""
+  [ "${my_cmd[0]}" = "octorules" ]
+  [ "${my_cmd[1]}" = "--config=config.yaml" ]
+  [ "${#my_cmd[@]}" -eq 2 ]
+}
+
+@test "build_octorules_cmd: includes zone and phase flags" {
+  build_octorules_cmd my_cmd "config.yaml" "a.com b.com" "cache_rules"
+  [ "${my_cmd[0]}" = "octorules" ]
+  [ "${my_cmd[1]}" = "--config=config.yaml" ]
+  [ "${my_cmd[2]}" = "--zone" ]
+  [ "${my_cmd[3]}" = "a.com" ]
+  [ "${my_cmd[4]}" = "--zone" ]
+  [ "${my_cmd[5]}" = "b.com" ]
+  [ "${my_cmd[6]}" = "--phase" ]
+  [ "${my_cmd[7]}" = "cache_rules" ]
+  [ "${#my_cmd[@]}" -eq 8 ]
+}
+
+@test "build_octorules_cmd: zones only, no phases" {
+  build_octorules_cmd my_cmd "config.yaml" "z.com" ""
+  [ "${#my_cmd[@]}" -eq 4 ]
+  [ "${my_cmd[2]}" = "--zone" ]
+  [ "${my_cmd[3]}" = "z.com" ]
+}
+
+@test "build_octorules_cmd: phases only, no zones" {
+  build_octorules_cmd my_cmd "config.yaml" "" "redirect_rules"
+  [ "${#my_cmd[@]}" -eq 4 ]
+  [ "${my_cmd[2]}" = "--phase" ]
+  [ "${my_cmd[3]}" = "redirect_rules" ]
+}
+
 @test "retry: warns on stderr between retries" {
   # Capture stderr from a command that fails once then succeeds.
   local counter_file="${MOCK_DIR}/counter"

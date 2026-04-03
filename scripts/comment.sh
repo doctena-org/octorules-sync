@@ -13,12 +13,9 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 : "${GITHUB_WORKSPACE:?GITHUB_WORKSPACE is not set}"
 
-_planfile="${GITHUB_WORKSPACE}/octorules-sync.plan"
-# Prefer the HTML plan file for PR comments (renders tables).
-_htmlfile="${GITHUB_WORKSPACE}/octorules-plan.html"
-if [ -s "${_htmlfile}" ]; then
-  _planfile="${_htmlfile}"
-fi
+_planfile="$(prefer_html_plan \
+  "${GITHUB_WORKSPACE}/octorules-sync.plan" \
+  "${GITHUB_WORKSPACE}/octorules-plan.html")"
 _marker="<!-- octorules-sync-plan -->"
 
 if [ "${ADD_PR_COMMENT}" != "Yes" ]; then
@@ -41,9 +38,6 @@ if ! [[ "${PR_NUMBER}" =~ ^[0-9]+$ ]]; then
   echo "FAIL: \$PR_NUMBER must be numeric (got '${PR_NUMBER}')"
   exit 1
 fi
-
-# Safe for ephemeral GitHub Actions runners — token is destroyed after the job.
-export GH_TOKEN="${PR_COMMENT_TOKEN}"
 
 echo "INFO: \$ADD_PR_COMMENT is 'Yes' and \$PR_COMMENT_TOKEN is set."
 
@@ -122,7 +116,7 @@ fi
 # Use workflow 'concurrency' groups to prevent this.
 _existing_comment_id=""
 if ! _existing_comment_id="$(
-  retry 3 2 gh api \
+  retry 3 2 env GH_TOKEN="${PR_COMMENT_TOKEN}" gh api \
     --paginate \
     "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
     --jq '.[] | select(.body | startswith("<!-- octorules-sync-plan -->")) | .id' \
@@ -134,7 +128,7 @@ fi
 
 if [ -n "${_existing_comment_id}" ]; then
   echo "INFO: Updating existing comment ${_existing_comment_id}."
-  retry 3 2 gh api \
+  retry 3 2 env GH_TOKEN="${PR_COMMENT_TOKEN}" gh api \
     --method PATCH \
     "repos/${GITHUB_REPOSITORY}/issues/comments/${_existing_comment_id}" \
     -f body="${_body}" > /dev/null || {
@@ -143,7 +137,7 @@ if [ -n "${_existing_comment_id}" ]; then
   }
 else
   echo "INFO: Creating new PR comment."
-  retry 3 2 gh api \
+  retry 3 2 env GH_TOKEN="${PR_COMMENT_TOKEN}" gh api \
     --method POST \
     "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
     -f body="${_body}" > /dev/null || {

@@ -49,6 +49,31 @@ build_flags() {
   fi
 }
 
+# Resolve the preferred plan file: HTML if present and non-empty, else text.
+# Usage: _planfile="$(prefer_html_plan "/path/to/text.plan" "/path/to/html.plan")"
+prefer_html_plan() {
+  local textfile="$1" htmlfile="$2"
+  if [ -s "${htmlfile}" ]; then
+    echo "${htmlfile}"
+  else
+    echo "${textfile}"
+  fi
+}
+
+# Build the common octorules command prefix with global flags.
+# Sets the named array to: (octorules --config=CONFIG --zone ... --phase ...)
+# Usage: build_octorules_cmd _cmd_var "$config" "$zones" "$phases"
+build_octorules_cmd() {
+  local -n _out="$1"
+  local config="$2" zones="$3" phases="$4"
+  local _zf=() _pf=()
+  build_flags _zf "--zone" "${zones}"
+  build_flags _pf "--phase" "${phases}"
+  _out=(octorules --config="${config}")
+  if [ ${#_zf[@]} -gt 0 ]; then _out+=("${_zf[@]}"); fi
+  if [ ${#_pf[@]} -gt 0 ]; then _out+=("${_pf[@]}"); fi
+}
+
 # Fail with a helpful message if octorules is not on PATH.
 require_octorules() {
   if ! command -v octorules >/dev/null 2>&1; then

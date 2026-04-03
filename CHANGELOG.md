@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.8.1] - 2026-04-03
+
+### Changed
+- `GH_TOKEN` scoped per-command instead of globally exported in comment.sh.
+- Common flag-building and plan-file preference logic extracted to `lib.sh`
+  helpers (`build_octorules_cmd`, `prefer_html_plan`).
+- `LINT_SEVERITY` defaults to `warning` when unset (symmetric with
+  `AUDIT_SEVERITY`).
+
 ## [1.8.0] - 2026-04-02
 
 ### Changed
