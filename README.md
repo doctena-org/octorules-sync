@@ -176,8 +176,8 @@ Available phases depend on the configured provider. See each provider's README f
 [Cloudflare](https://github.com/doctena-org/octorules-cloudflare) (23 phases) |
 [AWS WAF](https://github.com/doctena-org/octorules-aws) (4 phases) |
 [Google Cloud Armor](https://github.com/doctena-org/octorules-google) (4 phases) |
-[Azure WAF](https://github.com/doctena-org/octorules-azure) (2 phases) |
-[Bunny.net](https://github.com/doctena-org/octorules-bunny) (3 phases)
+[Azure WAF](https://github.com/doctena-org/octorules-azure) (3 phases) |
+[Bunny.net](https://github.com/doctena-org/octorules-bunny) (4 phases)
 
 Default `""` (empty string, all phases).
 
