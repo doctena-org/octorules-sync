@@ -2,7 +2,7 @@
 
 This action runs `octorules` from [doctena-org/octorules](https://github.com/doctena-org/octorules) to deploy your WAF rules config.
 
-octorules allows you to manage WAF and security rules (redirects, rewrites, headers, cache, WAF, rate limiting, and more) as YAML files and publish changes via your provider's API. Supported providers: [Cloudflare](https://github.com/doctena-org/octorules-cloudflare), [AWS WAF](https://github.com/doctena-org/octorules-aws), [Google Cloud Armor](https://github.com/doctena-org/octorules-google).
+octorules allows you to manage WAF and security rules (redirects, rewrites, headers, cache, WAF, rate limiting, and more) as YAML files and publish changes via your provider's API. Supported providers: [Cloudflare](https://github.com/doctena-org/octorules-cloudflare), [AWS WAF](https://github.com/doctena-org/octorules-aws), [Google Cloud Armor](https://github.com/doctena-org/octorules-google), [Azure WAF](https://github.com/doctena-org/octorules-azure), [Bunny.net](https://github.com/doctena-org/octorules-bunny).
 
 When you manage your octorules configuration in a GitHub repository, this [GitHub Action](https://help.github.com/actions/getting-started-with-github-actions/about-github-actions) allows you to test and publish your changes automatically using a [workflow](https://help.github.com/actions/configuring-and-managing-workflows) you define.
 
@@ -65,12 +65,39 @@ jobs:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
 ```
 
+### Azure WAF
+
+```yaml
+      - run: pip install octorules-azure
+      - uses: doctena-org/octorules-sync@v1
+        with:
+          config_path: config.yaml
+          doit: '--doit'
+        env:
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+```
+
+### Bunny.net
+
+```yaml
+      - run: pip install octorules-bunny
+      - uses: doctena-org/octorules-sync@v1
+        with:
+          config_path: config.yaml
+          doit: '--doit'
+        env:
+          BUNNY_API_KEY: ${{ secrets.BUNNY_API_KEY }}
+```
+
 ### Multi-provider
 
 Install all provider packages your config uses:
 
 ```yaml
-      - run: pip install octorules-cloudflare octorules-aws octorules-google
+      - run: pip install octorules-cloudflare octorules-aws octorules-google octorules-azure octorules-bunny
 ```
 
 ## Inputs
@@ -86,6 +113,8 @@ The secret name and config syntax depend on your provider:
 | [Cloudflare](https://github.com/doctena-org/octorules-cloudflare) | `CLOUDFLARE_API_TOKEN` | `token: env/CLOUDFLARE_API_TOKEN` |
 | [AWS WAF](https://github.com/doctena-org/octorules-aws) | Standard boto3 credentials (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`) or IAM role | No `token` needed — boto3 credential chain |
 | [Google Cloud Armor](https://github.com/doctena-org/octorules-google) | `GOOGLE_APPLICATION_CREDENTIALS` or Workload Identity | No `token` needed — Application Default Credentials |
+| [Azure WAF](https://github.com/doctena-org/octorules-azure) | `AZURE_SUBSCRIPTION_ID`, `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET` | No `token` needed — Azure SDK credential chain |
+| [Bunny.net](https://github.com/doctena-org/octorules-bunny) | `BUNNY_API_KEY` | `token: env/BUNNY_API_KEY` |
 
 The `env/` prefix in config values resolves environment variables at runtime. See each provider's README for full authentication details.
 
@@ -146,7 +175,9 @@ Space separated list of rule phases to sync. Leave empty to sync all phases in t
 Available phases depend on the configured provider. See each provider's README for the full list:
 [Cloudflare](https://github.com/doctena-org/octorules-cloudflare) (23 phases) |
 [AWS WAF](https://github.com/doctena-org/octorules-aws) (4 phases) |
-[Google Cloud Armor](https://github.com/doctena-org/octorules-google) (4 phases)
+[Google Cloud Armor](https://github.com/doctena-org/octorules-google) (4 phases) |
+[Azure WAF](https://github.com/doctena-org/octorules-azure) (2 phases) |
+[Bunny.net](https://github.com/doctena-org/octorules-bunny) (3 phases)
 
 Default `""` (empty string, all phases).
 
@@ -170,7 +201,7 @@ Default `"warning"`.
 
 ### `lint_plan`
 
-Plan tier override for Cloudflare lint entitlement checks: `"free"`, `"pro"`, `"business"`, `"enterprise"`. AWS WAF and Google Cloud Armor providers ignore this setting.
+Plan tier override for Cloudflare lint entitlement checks: `"free"`, `"pro"`, `"business"`, `"enterprise"`. Non-Cloudflare providers ignore this setting.
 
 Default `""` (defaults to `"enterprise"`).
 
@@ -289,7 +320,7 @@ If wirefilter is unavailable in your CI environment (e.g. musl-based
 containers), expression validation is still performed but with reduced
 coverage.
 
-AWS WAF and Google Cloud Armor providers include their own expression validation (CEL for Cloud Armor) and do not need wirefilter.
+Non-Cloudflare providers (AWS WAF, Google Cloud Armor, Azure WAF, Bunny.net) include their own expression validation and do not need wirefilter.
 
 ## Pull request plan comments
 
@@ -460,6 +491,12 @@ The action requires `octorules` and a provider package to be installed before it
 
 # Google Cloud Armor
 - run: pip install octorules-google
+
+# Azure WAF
+- run: pip install octorules-azure
+
+# Bunny.net
+- run: pip install octorules-bunny
 
 # Multiple providers
 - run: pip install octorules-cloudflare octorules-aws

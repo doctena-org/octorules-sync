@@ -21,9 +21,11 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Create mock octorules binary
+        env:
+          RUNNER_TEMP: ${{ runner.temp }}
         run: |
-          mkdir -p "${{ runner.temp }}/bin"
-          cat > "${{ runner.temp }}/bin/octorules" <<'MOCK'
+          mkdir -p "${RUNNER_TEMP}/bin"
+          cat > "${RUNNER_TEMP}/bin/octorules" <<'MOCK'
           #!/bin/bash
           # Mock octorules for integration testing.
           # plan mode: emit a checksum on stderr, plan on stdout.
@@ -38,8 +40,8 @@ jobs:
           fi
           exit 0
           MOCK
-          chmod +x "${{ runner.temp }}/bin/octorules"
-          echo "${{ runner.temp }}/bin" >> "$GITHUB_PATH"
+          chmod +x "${RUNNER_TEMP}/bin/octorules"
+          echo "${RUNNER_TEMP}/bin" >> "$GITHUB_PATH"
 
       - name: Create minimal config
         run: |
@@ -66,10 +68,13 @@ jobs:
           CLOUDFLARE_API_TOKEN: fake-token-for-test
 
       - name: Verify outputs exist
+        env:
+          EXIT_CODE: ${{ steps.octorules.outputs.exit_code }}
+          CHECKSUM: ${{ steps.octorules.outputs.checksum }}
         run: |
-          echo "exit_code=${{ steps.octorules.outputs.exit_code }}"
-          echo "checksum=${{ steps.octorules.outputs.checksum }}"
-          test -n "${{ steps.octorules.outputs.exit_code }}"
+          echo "exit_code=${EXIT_CODE}"
+          echo "checksum=${CHECKSUM}"
+          test -n "${EXIT_CODE}"
           test -f "${GITHUB_WORKSPACE}/octorules-sync.plan"
           test -f "${GITHUB_WORKSPACE}/octorules-sync.log"
 
@@ -81,9 +86,11 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Create mock octorules that exits 2
+        env:
+          RUNNER_TEMP: ${{ runner.temp }}
         run: |
-          mkdir -p "${{ runner.temp }}/bin"
-          cat > "${{ runner.temp }}/bin/octorules" <<'MOCK'
+          mkdir -p "${RUNNER_TEMP}/bin"
+          cat > "${RUNNER_TEMP}/bin/octorules" <<'MOCK'
           #!/bin/bash
           if [[ "$*" == *"plan"* ]]; then
             echo "checksum=abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789" >&2
@@ -96,8 +103,8 @@ jobs:
           fi
           exit 0
           MOCK
-          chmod +x "${{ runner.temp }}/bin/octorules"
-          echo "${{ runner.temp }}/bin" >> "$GITHUB_PATH"
+          chmod +x "${RUNNER_TEMP}/bin/octorules"
+          echo "${RUNNER_TEMP}/bin" >> "$GITHUB_PATH"
 
       - name: Create minimal config
         run: |
@@ -124,9 +131,12 @@ jobs:
           CLOUDFLARE_API_TOKEN: fake-token-for-test
 
       - name: Verify exit code 2 and checksum
+        env:
+          EXIT_CODE: ${{ steps.octorules.outputs.exit_code }}
+          CHECKSUM: ${{ steps.octorules.outputs.checksum }}
         run: |
-          test "${{ steps.octorules.outputs.exit_code }}" = "2"
-          test -n "${{ steps.octorules.outputs.checksum }}"
+          test "${EXIT_CODE}" = "2"
+          test -n "${CHECKSUM}"
 
   integration-lint-errors:
     name: Lint errors block sync
@@ -136,9 +146,11 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Create mock octorules with lint errors
+        env:
+          RUNNER_TEMP: ${{ runner.temp }}
         run: |
-          mkdir -p "${{ runner.temp }}/bin"
-          cat > "${{ runner.temp }}/bin/octorules" <<'MOCK'
+          mkdir -p "${RUNNER_TEMP}/bin"
+          cat > "${RUNNER_TEMP}/bin/octorules" <<'MOCK'
           #!/bin/bash
           if [[ "$*" == *"lint"* ]]; then
             echo "E001: Missing required field 'action'"
@@ -148,8 +160,8 @@ jobs:
           echo "UNEXPECTED: sync/plan ran despite lint errors" >&2
           exit 0
           MOCK
-          chmod +x "${{ runner.temp }}/bin/octorules"
-          echo "${{ runner.temp }}/bin" >> "$GITHUB_PATH"
+          chmod +x "${RUNNER_TEMP}/bin/octorules"
+          echo "${RUNNER_TEMP}/bin" >> "$GITHUB_PATH"
 
       - name: Create minimal config
         run: |
@@ -179,9 +191,12 @@ jobs:
           CLOUDFLARE_API_TOKEN: fake-token-for-test
 
       - name: Verify action failed due to lint errors
+        env:
+          OUTCOME: ${{ steps.octorules.outcome }}
+          LINT_EXIT_CODE: ${{ steps.octorules.outputs.lint_exit_code }}
         run: |
-          test "${{ steps.octorules.outcome }}" = "failure"
-          test "${{ steps.octorules.outputs.lint_exit_code }}" = "1"
+          test "${OUTCOME}" = "failure"
+          test "${LINT_EXIT_CODE}" = "1"
 
   integration-audit-findings:
     name: Audit findings block sync
@@ -191,9 +206,11 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Create mock octorules with audit findings
+        env:
+          RUNNER_TEMP: ${{ runner.temp }}
         run: |
-          mkdir -p "${{ runner.temp }}/bin"
-          cat > "${{ runner.temp }}/bin/octorules" <<'MOCK'
+          mkdir -p "${RUNNER_TEMP}/bin"
+          cat > "${RUNNER_TEMP}/bin/octorules" <<'MOCK'
           #!/bin/bash
           if [[ "$*" == *"audit"* ]]; then
             echo "ip-overlap: 10.0.0.0/8 overlaps in rules block_internal and allow_vpn"
@@ -207,8 +224,8 @@ jobs:
           echo "UNEXPECTED: sync/plan ran despite audit findings" >&2
           exit 0
           MOCK
-          chmod +x "${{ runner.temp }}/bin/octorules"
-          echo "${{ runner.temp }}/bin" >> "$GITHUB_PATH"
+          chmod +x "${RUNNER_TEMP}/bin/octorules"
+          echo "${RUNNER_TEMP}/bin" >> "$GITHUB_PATH"
 
       - name: Create minimal config
         run: |
@@ -238,9 +255,12 @@ jobs:
           CLOUDFLARE_API_TOKEN: fake-token-for-test
 
       - name: Verify action failed due to audit findings
+        env:
+          OUTCOME: ${{ steps.octorules.outcome }}
+          AUDIT_EXIT_CODE: ${{ steps.octorules.outputs.audit_exit_code }}
         run: |
-          test "${{ steps.octorules.outcome }}" = "failure"
-          test "${{ steps.octorules.outputs.audit_exit_code }}" = "1"
+          test "${OUTCOME}" = "failure"
+          test "${AUDIT_EXIT_CODE}" = "1"
 
   integration-audit-warnings-allow-sync:
     name: Audit warnings do not block sync
@@ -250,9 +270,11 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Create mock octorules with audit warnings
+        env:
+          RUNNER_TEMP: ${{ runner.temp }}
         run: |
-          mkdir -p "${{ runner.temp }}/bin"
-          cat > "${{ runner.temp }}/bin/octorules" <<'MOCK'
+          mkdir -p "${RUNNER_TEMP}/bin"
+          cat > "${RUNNER_TEMP}/bin/octorules" <<'MOCK'
           #!/bin/bash
           if [[ "$*" == *"audit"* ]]; then
             echo "cdn-ranges: Cloudflare IP ranges may be stale (warning)"
@@ -269,8 +291,8 @@ jobs:
           fi
           exit 0
           MOCK
-          chmod +x "${{ runner.temp }}/bin/octorules"
-          echo "${{ runner.temp }}/bin" >> "$GITHUB_PATH"
+          chmod +x "${RUNNER_TEMP}/bin/octorules"
+          echo "${RUNNER_TEMP}/bin" >> "$GITHUB_PATH"
 
       - name: Create minimal config
         run: |
@@ -301,11 +323,14 @@ jobs:
           CLOUDFLARE_API_TOKEN: fake-token-for-test
 
       - name: Verify action succeeded (warnings do not block sync)
+        env:
+          OUTCOME: ${{ steps.octorules.outcome }}
+          AUDIT_EXIT_CODE: ${{ steps.octorules.outputs.audit_exit_code }}
         run: |
-          echo "outcome=${{ steps.octorules.outcome }}"
-          echo "audit_exit_code=${{ steps.octorules.outputs.audit_exit_code }}"
-          test "${{ steps.octorules.outcome }}" = "success"
-          test "${{ steps.octorules.outputs.audit_exit_code }}" = "2"
+          echo "outcome=${OUTCOME}"
+          echo "audit_exit_code=${AUDIT_EXIT_CODE}"
+          test "${OUTCOME}" = "success"
+          test "${AUDIT_EXIT_CODE}" = "2"
           test -f "${GITHUB_WORKSPACE}/octorules-sync.plan"
 
   integration-pr-comment:
@@ -319,9 +344,11 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Create mock octorules binary
+        env:
+          RUNNER_TEMP: ${{ runner.temp }}
         run: |
-          mkdir -p "${{ runner.temp }}/bin"
-          cat > "${{ runner.temp }}/bin/octorules" <<'MOCK'
+          mkdir -p "${RUNNER_TEMP}/bin"
+          cat > "${RUNNER_TEMP}/bin/octorules" <<'MOCK'
           #!/bin/bash
           if [[ "$*" == *"plan"* ]]; then
             echo "checksum=abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234" >&2
@@ -330,8 +357,8 @@ jobs:
           fi
           exit 0
           MOCK
-          chmod +x "${{ runner.temp }}/bin/octorules"
-          echo "${{ runner.temp }}/bin" >> "$GITHUB_PATH"
+          chmod +x "${RUNNER_TEMP}/bin/octorules"
+          echo "${RUNNER_TEMP}/bin" >> "$GITHUB_PATH"
 
       - name: Create test config
         run: |
@@ -362,10 +389,12 @@ jobs:
       - name: Verify comment was created on PR
         env:
           GH_TOKEN: ${{ github.token }}
+          PR_NUM: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
         run: |
           # Fetch PR comments and look for the octorules marker
-          pr_num="${{ github.event.pull_request.number }}"
-          repo="${{ github.repository }}"
+          pr_num="${PR_NUM}"
+          repo="${REPO}"
           comments="$(gh api "repos/${repo}/issues/${pr_num}/comments" --jq '.[].body')"
           if echo "${comments}" | grep -q "octorules-sync-plan"; then
             echo "PASS: PR comment with octorules marker found"

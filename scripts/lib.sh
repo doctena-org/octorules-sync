@@ -88,6 +88,11 @@ require_octorules() {
 # Run a command, capturing stdout and stderr to files while still displaying them.
 # Sets _exit_code in the caller's scope.
 # Usage: run_capturing <stdout_file> <stderr_file> <command...>
+#
+# WARNING: _exit_code is a global variable set in the caller's scope.
+# Do NOT nest run_capturing calls — a nested invocation would clobber the
+# outer caller's _exit_code. Each script (lint.sh, audit.sh, run.sh)
+# calls this exactly once, so nesting is not a concern today.
 run_capturing() {
   local stdout_file="$1" stderr_file="$2"
   shift 2

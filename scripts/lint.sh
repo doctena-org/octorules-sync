@@ -17,8 +17,6 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 : "${GITHUB_WORKSPACE:?GITHUB_WORKSPACE is not set}"
 : "${GITHUB_OUTPUT:?GITHUB_OUTPUT is not set}"
 
-require_octorules
-
 # Warn on unexpected input values (don't fail — backwards compat).
 warn_unexpected "LINT_SEVERITY" "${LINT_SEVERITY:-}" "error warning info"
 
@@ -27,6 +25,8 @@ if [ "${LINT}" != "Yes" ]; then
   { echo "lint_exit_code="; echo "lint_results="; } >> "${GITHUB_OUTPUT}"
   exit 0
 fi
+
+require_octorules
 
 _lint_resultfile="${GITHUB_WORKSPACE}/octorules-sync.lint"
 _lint_logfile="${GITHUB_WORKSPACE}/octorules-sync.lint.log"

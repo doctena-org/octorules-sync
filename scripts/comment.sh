@@ -115,16 +115,17 @@ fi
 # Note: If multiple jobs update the same PR concurrently, the last one wins.
 # Use workflow 'concurrency' groups to prevent this.
 _existing_comment_id=""
-if ! _existing_comment_id="$(
+_all_ids=""
+if ! _all_ids="$(
   retry 3 2 env GH_TOKEN="${PR_COMMENT_TOKEN}" gh api \
     --paginate \
     "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
-    --jq '.[] | select(.body | startswith("<!-- octorules-sync-plan -->")) | .id' \
-  | head -n 1
+    --jq '.[] | select(.body | startswith("<!-- octorules-sync-plan -->")) | .id'
 )"; then
   echo "WARN: Could not fetch existing comments after 3 attempts. A new comment will be created."
-  _existing_comment_id=""
+  _all_ids=""
 fi
+_existing_comment_id="$(echo "${_all_ids}" | head -n 1)"
 
 if [ -n "${_existing_comment_id}" ]; then
   echo "INFO: Updating existing comment ${_existing_comment_id}."

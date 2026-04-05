@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.8.1] - 2026-04-05
+
+### Fixed
+- PR comment deduplication could fail due to SIGPIPE when
+  `gh api --paginate` was piped to `head -n 1` — separated into two steps.
+- `${{ }}` expressions in `run:` blocks moved to `env:` bindings for injection
+  safety.
+- `require_octorules` was called before the skip check in `lint.sh` and
+  `audit.sh` — moved after, so disabled steps exit cleanly without requiring
+  octorules.
+
+### Changed
+- Documented `_exit_code` global variable fragility in `run_capturing` with a
+  warning comment.
+- Pre-commit hook now prefers `.venv/bin/pip` and `.venv/bin/yamllint` when
+  available, falling back to global PATH.
+
 ## [1.8.1] - 2026-04-03
 
 ### Changed
