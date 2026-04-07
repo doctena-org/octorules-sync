@@ -2,6 +2,7 @@
 *.log
 *.plan
 *.lint
+*.audit
 
 # OS
 .DS_Store

@@ -173,3 +173,22 @@ teardown() {
   result="$(retry 3 1 echo "hello world")"
   [ "${result}" = "hello world" ]
 }
+
+# ---------- audit.sh: AUDIT_CHECKS with shell metacharacters ----------
+
+@test "audit.sh: AUDIT_CHECKS with backticks passed as literal" {
+  AUDIT="Yes" AUDIT_CHECKS='ip-overlap `whoami`' AUDIT_SEVERITY="warning" run bash "${SCRIPT_DIR}/audit.sh"
+  grep -qF '`whoami`' "${MOCK_ARGS_FILE}"
+}
+
+@test "audit.sh: AUDIT_CHECKS with dollar-paren passed as literal" {
+  AUDIT="Yes" AUDIT_CHECKS='ip-overlap $(id)' AUDIT_SEVERITY="warning" run bash "${SCRIPT_DIR}/audit.sh"
+  grep -qF '$(id)' "${MOCK_ARGS_FILE}"
+}
+
+# ---------- lint.sh: LINT_PLAN with spaces ----------
+
+@test "lint.sh: LINT_PLAN with spaces passed as single argument" {
+  LINT="Yes" LINT_PLAN="free plan" LINT_SEVERITY="warning" run bash "${SCRIPT_DIR}/lint.sh"
+  grep -qF 'free plan' "${MOCK_ARGS_FILE}"
+}

@@ -5,16 +5,8 @@
 #   ln -sf ../../scripts/hooks/pre-commit .git/hooks/pre-commit
 set -euo pipefail
 
-if [ -x .venv/bin/pip ]; then
-  .venv/bin/pip install 'yamllint>=1.35,<2' -q
-else
-  pip install 'yamllint>=1.35,<2' -q
-fi
+.venv/bin/pip install 'yamllint>=1.35,<2' -q
 
 shellcheck scripts/*.sh
 
-if [ -x .venv/bin/yamllint ]; then
-  .venv/bin/yamllint --no-warnings ./
-else
-  yamllint --no-warnings ./
-fi
+.venv/bin/yamllint --no-warnings ./

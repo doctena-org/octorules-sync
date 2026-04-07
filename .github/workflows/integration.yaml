@@ -8,14 +8,14 @@ on:
     branches: [main]
   workflow_dispatch:
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+permissions:
+  contents: read
 
 jobs:
   integration:
     name: End-to-end action test
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout Code
         uses: actions/checkout@v6
@@ -81,6 +81,7 @@ jobs:
   integration-exit-code-2:
     name: Plan with changes detected (exit 2)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout Code
         uses: actions/checkout@v6
@@ -141,6 +142,7 @@ jobs:
   integration-lint-errors:
     name: Lint errors block sync
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout Code
         uses: actions/checkout@v6
@@ -201,6 +203,7 @@ jobs:
   integration-audit-findings:
     name: Audit findings block sync
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout Code
         uses: actions/checkout@v6
@@ -265,6 +268,7 @@ jobs:
   integration-audit-warnings-allow-sync:
     name: Audit warnings do not block sync
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout Code
         uses: actions/checkout@v6
@@ -337,7 +341,9 @@ jobs:
     name: PR comment creation (PR context only)
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
+      contents: read
       pull-requests: write
     steps:
       - name: Checkout Code

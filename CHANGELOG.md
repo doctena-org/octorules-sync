@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [1.8.2] - 2026-04-05
+## [1.8.2] - 2026-04-07
 
 ### Fixed
 - PR comment deduplication could fail due to SIGPIPE when
@@ -15,12 +15,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - `require_octorules` was called before the skip check in `lint.sh` and
   `audit.sh` — moved after, so disabled steps exit cleanly without requiring
   octorules.
+- CI workflows missing `timeout-minutes` on all jobs.
+- Concurrency blocks removed from release and integration workflows.
 
 ### Changed
 - Documented `_exit_code` global variable fragility in `run_capturing` with a
   warning comment.
-- Pre-commit hook now prefers `.venv/bin/pip` and `.venv/bin/yamllint` when
-  available, falling back to global PATH.
+- Pre-commit hook no longer falls back to bare `pip`/`yamllint` — always uses
+  `.venv/bin/`.
 - Azure and Bunny providers documented in README.
 
 ## [1.8.1] - 2026-04-03
