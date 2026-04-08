@@ -81,6 +81,8 @@ require_octorules() {
     echo "  pip install octorules octorules-cloudflare[wirefilter]  # Cloudflare"
     echo "  pip install octorules octorules-aws                     # AWS WAF"
     echo "  pip install octorules octorules-google                  # Google Cloud Armor"
+    echo "  pip install octorules octorules-azure                   # Azure Front Door / App Gateway"
+    echo "  pip install octorules octorules-bunny                   # Bunny.net"
     exit 1
   fi
 }
