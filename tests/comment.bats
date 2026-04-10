@@ -78,6 +78,13 @@ teardown() {
   [[ "${output}" == *"SKIP"* ]]
 }
 
+@test "fail when GITHUB_REPOSITORY missing" {
+  unset GITHUB_REPOSITORY
+  run bash "${SCRIPT_DIR}/comment.sh"
+  [ "${status}" -ne 0 ]
+  [[ "${output}" == *"GITHUB_REPOSITORY is not set"* ]]
+}
+
 @test "fail when PR_COMMENT_TOKEN missing" {
   PR_COMMENT_TOKEN="" run bash "${SCRIPT_DIR}/comment.sh"
   [ "${status}" -eq 1 ]

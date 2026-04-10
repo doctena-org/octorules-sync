@@ -12,6 +12,7 @@ set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 : "${GITHUB_WORKSPACE:?GITHUB_WORKSPACE is not set}"
+: "${GITHUB_REPOSITORY:?GITHUB_REPOSITORY is not set}"
 
 _planfile="$(prefer_html_plan \
   "${GITHUB_WORKSPACE}/octorules-sync.plan" \
