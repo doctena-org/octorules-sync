@@ -45,7 +45,7 @@ inputs:
     required: false
     default: ''
   audit:
-    description: 'Run octorules audit (IP overlap, CDN range checks) before plan/sync?
+    description: 'Run octorules audit (IP overlap, IP shadow, CDN range, zone drift checks) before plan/sync?
                   Set "Yes" to enable.'
     required: false
     default: 'No'

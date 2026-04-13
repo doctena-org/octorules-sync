@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
 ## [1.8.4] - 2026-04-10
 
 ### Fixed
@@ -12,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   a clear error instead of a cryptic downstream failure from `set -u`.
 
 ## [1.8.3] - 2026-04-08
+
+### Changed
+- `require_octorules()` help text includes Azure and Bunny install examples
+
+## [1.8.2] - 2026-04-07
 
 ### Fixed
 - PR comment deduplication could fail due to SIGPIPE when
@@ -21,16 +28,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - `require_octorules` was called before the skip check in `lint.sh` and
   `audit.sh` — moved after, so disabled steps exit cleanly without requiring
   octorules.
-- CI workflows missing `timeout-minutes` on all jobs.
-- Concurrency blocks removed from release and integration workflows.
+- Concurrency blocks removed from CI, release, and integration workflows (per
+  project policy).
 
 ### Changed
 - Documented `_exit_code` global variable fragility in `run_capturing` with a
   warning comment.
-- Pre-commit hook no longer falls back to bare `pip`/`yamllint` — always uses
-  `.venv/bin/`.
+- Pre-commit hook always uses `.venv/bin/` — no global fallback.
 - Azure and Bunny providers documented in README.
-- `require_octorules()` help text includes Azure and Bunny install examples
+- `permissions: contents: read` added to CI and integration workflows.
+- `*.audit` added to `.gitignore`.
+
+### Added
+- `timeout-minutes` on all CI and integration jobs.
+- Adversarial tests for `AUDIT_CHECKS` and `LINT_PLAN` inputs.
 
 ## [1.8.1] - 2026-04-03
 

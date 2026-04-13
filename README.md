@@ -223,7 +223,7 @@ Default `""` (empty string, must be provided when `add_pr_comment` is `"Yes"`).
 
 ### `audit`
 
-Run `octorules audit` (IP overlap, CDN range, zone drift analysis) before plan/sync? Set `"Yes"` to enable. When enabled, audit findings are reported in the action output. Only errors (exit code 1) block sync; warnings (exit code 2) are reported but do not prevent deployment.
+Run `octorules audit` (IP overlap, IP shadow, CDN range, zone drift analysis) before plan/sync? Set `"Yes"` to enable. When enabled, audit findings are reported in the action output. Only errors (exit code 1) block sync; warnings (exit code 2) are reported but do not prevent deployment.
 
 Default `"No"`.
 
@@ -239,7 +239,7 @@ Minimum audit severity: `"error"`, `"warning"`, or `"info"`. Controls which find
 
 ### `audit_log`
 
-Path to write a JSON-lines audit log of sync results. Each line is a JSON object with the sync operation details (zone, phase, action, result). Useful for compliance and post-sync analysis.
+Path to write a JSON-lines audit log of sync results. Only used when `doit` is `"--doit"` (sync mode). Each line is a JSON object with the sync operation details (zone, phase, action, result). Useful for compliance and post-sync analysis.
 
 Default `""` (disabled).
 
@@ -292,6 +292,13 @@ Exit code from `octorules audit`: `0` = clean, `1` = errors, `2` = warnings only
 ### `audit_results`
 
 Audit results text. Empty when audit is disabled or clean.
+
+## Auditing
+
+When `audit` is set to `"Yes"`, the action runs `octorules audit` before the plan/sync step. Audit findings are included in PR comments (when enabled) and exposed via the `audit_exit_code` and `audit_results` outputs.
+
+- **Plan mode**: audit errors are reported but the plan still runs, so you can see both audit findings and planned changes. The action fails at the end if audit found errors.
+- **Sync mode**: audit errors **block** the sync step entirely — changes are not applied. Warnings do not block sync.
 
 ## Linting
 
@@ -569,3 +576,7 @@ Contributions are welcome!
 Releases are automated. Push a semver tag (`v1.2.3`) to create a GitHub Release. Publishing the release updates the major version tag (`v1`) automatically.
 
 Update `CHANGELOG.md` with your changes under the `[Unreleased]` section before tagging.
+
+## License
+
+octorules-sync is licensed under the [Apache License 2.0](LICENSE).
