@@ -119,12 +119,13 @@ teardown() {
 
 # ---------- Plan mode ----------
 
-@test "plan mode: calls octorules plan with --config and --checksum" {
+@test "plan mode: calls octorules plan with --config, --checksum and --exit-code" {
   DOIT="" run bash "${SCRIPT_DIR}/run.sh"
   args="$(cat "${MOCK_ARGS_FILE}")"
   [[ "${args}" == *"plan"* ]]
   [[ "${args}" == *"--config="* ]]
   [[ "${args}" == *"--checksum"* ]]
+  [[ "${args}" == *"--exit-code"* ]]
   [[ "${args}" != *"--doit"* ]]
   [[ "${args}" != *"--format"* ]]
 }

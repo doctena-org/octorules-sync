@@ -115,7 +115,7 @@ else
   # --- Plan mode: octorules plan ---
   _cmd=()
   build_octorules_cmd _cmd "${_config_path}" "${_zones}" "${_phases}"
-  _cmd+=(plan --checksum)
+  _cmd+=(plan --checksum --exit-code)
 
   echo "INFO: Running octorules plan"
   run_capturing "${_planfile}" "${_logfile}" "${_cmd[@]}"
