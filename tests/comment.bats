@@ -171,12 +171,16 @@ teardown() {
   [[ "${gh_calls}" == *"W001: some warning"* ]]
 }
 
-@test "lint file empty: comment body omits lint section when lint disabled" {
-  touch "${GITHUB_WORKSPACE}/octorules-sync.lint"
-  LINT_EXIT_CODE="" run bash "${SCRIPT_DIR}/comment.sh"
-  [ "${status}" -eq 0 ]
-  gh_calls="$(cat "${GH_CALLS_FILE}")"
-  [[ "${gh_calls}" != *"Lint Results"* ]]
+@test "lint disabled (file empty or missing, no exit code): no lint section" {
+  # Both branches share the same outcome: no LINT_EXIT_CODE → lint never ran
+  # → omit the section regardless of whether the file exists.
+  for setup in "touch" "rm -f"; do
+    eval "${setup} ${GITHUB_WORKSPACE}/octorules-sync.lint"
+    LINT_EXIT_CODE="" run bash "${SCRIPT_DIR}/comment.sh"
+    [ "${status}" -eq 0 ]
+    gh_calls="$(cat "${GH_CALLS_FILE}")"
+    [[ "${gh_calls}" != *"Lint Results"* ]]
+  done
 }
 
 @test "lint clean: comment body shows clean message when lint passed" {
@@ -186,14 +190,6 @@ teardown() {
   gh_calls="$(cat "${GH_CALLS_FILE}")"
   [[ "${gh_calls}" == *"Lint Results"* ]]
   [[ "${gh_calls}" == *"clean, no issues found"* ]]
-}
-
-@test "lint file missing: comment body omits lint section" {
-  rm -f "${GITHUB_WORKSPACE}/octorules-sync.lint"
-  run bash "${SCRIPT_DIR}/comment.sh"
-  [ "${status}" -eq 0 ]
-  gh_calls="$(cat "${GH_CALLS_FILE}")"
-  [[ "${gh_calls}" != *"Lint Results"* ]]
 }
 
 @test "both lint and plan content: comment contains both" {
@@ -332,12 +328,14 @@ PLAN
   [[ "${gh_calls}" == *"zone-drift: 2 findings"* ]]
 }
 
-@test "audit file empty: comment body omits audit section when audit disabled" {
-  touch "${GITHUB_WORKSPACE}/octorules-sync.audit"
-  AUDIT_EXIT_CODE="" run bash "${SCRIPT_DIR}/comment.sh"
-  [ "${status}" -eq 0 ]
-  gh_calls="$(cat "${GH_CALLS_FILE}")"
-  [[ "${gh_calls}" != *"Audit Results"* ]]
+@test "audit disabled (file empty or missing, no exit code): no audit section" {
+  for setup in "touch" "rm -f"; do
+    eval "${setup} ${GITHUB_WORKSPACE}/octorules-sync.audit"
+    AUDIT_EXIT_CODE="" run bash "${SCRIPT_DIR}/comment.sh"
+    [ "${status}" -eq 0 ]
+    gh_calls="$(cat "${GH_CALLS_FILE}")"
+    [[ "${gh_calls}" != *"Audit Results"* ]]
+  done
 }
 
 @test "audit clean: comment body shows clean message when audit passed" {
@@ -347,14 +345,6 @@ PLAN
   gh_calls="$(cat "${GH_CALLS_FILE}")"
   [[ "${gh_calls}" == *"Audit Results"* ]]
   [[ "${gh_calls}" == *"clean, no findings"* ]]
-}
-
-@test "audit file missing: comment body omits audit section" {
-  rm -f "${GITHUB_WORKSPACE}/octorules-sync.audit"
-  run bash "${SCRIPT_DIR}/comment.sh"
-  [ "${status}" -eq 0 ]
-  gh_calls="$(cat "${GH_CALLS_FILE}")"
-  [[ "${gh_calls}" != *"Audit Results"* ]]
 }
 
 @test "audit + lint + plan: comment contains all three sections in order" {

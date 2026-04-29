@@ -54,43 +54,15 @@ teardown() {
 
 # ---------- build_flags: adversarial values ----------
 
-@test "build_flags: value with backticks is treated as literal" {
-  build_flags my_arr "--zone" '`whoami`.com'
-  [ "${#my_arr[@]}" -eq 2 ]
-  [ "${my_arr[0]}" = "--zone" ]
-  [ "${my_arr[1]}" = '`whoami`.com' ]
-}
-
-@test "build_flags: value with dollar-paren is treated as literal" {
-  build_flags my_arr "--zone" '$(id).com'
-  [ "${#my_arr[@]}" -eq 2 ]
-  [ "${my_arr[1]}" = '$(id).com' ]
-}
-
-@test "build_flags: semicolons within a word are treated as literal" {
+@test "build_flags: shell metacharacters in values are treated as literals" {
   # build_flags word-splits on spaces (by design), but shell metacharacters
   # within each word must remain literal — no command injection.
-  build_flags my_arr "--zone" 'a.com;rm'
-  [ "${#my_arr[@]}" -eq 2 ]
-  [ "${my_arr[1]}" = 'a.com;rm' ]
-}
-
-@test "build_flags: pipe within a word is treated as literal" {
-  build_flags my_arr "--phase" 'cache_rules|cat'
-  [ "${#my_arr[@]}" -eq 2 ]
-  [ "${my_arr[1]}" = 'cache_rules|cat' ]
-}
-
-@test "build_flags: value with double quotes is treated as literal" {
-  build_flags my_arr "--zone" '"quoted.com"'
-  [ "${#my_arr[@]}" -eq 2 ]
-  [ "${my_arr[1]}" = '"quoted.com"' ]
-}
-
-@test "build_flags: value with single quotes is treated as literal" {
-  build_flags my_arr "--zone" "it's.com"
-  [ "${#my_arr[@]}" -eq 2 ]
-  [ "${my_arr[1]}" = "it's.com" ]
+  for value in '`whoami`.com' '$(id).com' 'a.com;rm' 'cache_rules|cat' '"quoted.com"' "it's.com"; do
+    build_flags my_arr "--zone" "${value}"
+    [ "${#my_arr[@]}" -eq 2 ]
+    [ "${my_arr[0]}" = "--zone" ]
+    [ "${my_arr[1]}" = "${value}" ]
+  done
 }
 
 # ---------- run.sh: CONFIG_PATH with spaces ----------
