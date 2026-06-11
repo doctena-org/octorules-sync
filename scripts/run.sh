@@ -134,9 +134,9 @@ fi
 echo "INFO: octorules output has been written to ${_logfile}"
 
 # Extract checksum from plan logfile (plan mode only).
-# Accepts 32-128 hex chars to be forward-compatible with hash algorithm changes.
+# octorules emits a SHA-256 checksum (64 hex chars); match exactly that.
 if [ "${_doit}" != "--doit" ] && [ -f "${_logfile}" ]; then
-  _checksum_value="$(grep -oP '^checksum=\K[0-9a-f]{32,128}' "${_logfile}" || true)"
+  _checksum_value="$(grep -oP '^checksum=\K[0-9a-f]{64}' "${_logfile}" || true)"
 fi
 
 _write_outputs with_checksum
