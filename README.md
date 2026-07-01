@@ -309,23 +309,7 @@ When `lint` is set to `"Yes"`, the action runs `octorules lint --exit-code` befo
 
 ### Wirefilter support (Cloudflare)
 
-When linting Cloudflare rules, installing `octorules-cloudflare[wirefilter]` is **strongly recommended**. Without it, expression validation uses a regex-based fallback that can only extract field and function names. With wirefilter installed, expressions are parsed by Cloudflare's real [wirefilter](https://github.com/cloudflare/wirefilter) engine, enabling detection of syntax errors, unknown fields, type mismatches, and invalid operators that the regex fallback cannot catch.
-
-Specifically, without wirefilter the linter **cannot** detect:
-
-- Syntax errors in expressions (e.g. unmatched parentheses)
-- References to unknown or misspelled fields
-- Type mismatches (e.g. comparing an IP field with a string)
-- Invalid operator usage (e.g. `contains` on a non-string field)
-- Unknown or misspelled function names
-
-The regex-based fallback can only extract field and function names for basic
-checks (e.g. "is this field name known?").  For production use, installing
-wirefilter is strongly recommended.
-
-If wirefilter is unavailable in your CI environment (e.g. musl-based
-containers), expression validation is still performed but with reduced
-coverage.
+When linting Cloudflare rules, expressions are parsed by Cloudflare's real [wirefilter](https://github.com/cloudflare/wirefilter) engine, which ships as a required dependency of `octorules-cloudflare` — no extra install step. This catches syntax errors, unknown or misspelled fields, type mismatches, invalid operator usage, and unknown function names that name-only heuristics cannot.
 
 Non-Cloudflare providers (AWS WAF, Google Cloud Armor, Azure WAF, Bunny.net) include their own expression validation and do not need wirefilter.
 

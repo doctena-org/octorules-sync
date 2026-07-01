@@ -1,0 +1,14 @@
+# Managed by pre-commit (https://pre-commit.com). Install once: pre-commit install
+# Pinned hooks are the single source of truth for tool versions. CI runs
+# `pre-commit run --all-files`.
+repos:
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.38.0
+    hooks:
+      - id: yamllint
+        args: ["--no-warnings"]
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1
+    hooks:
+      - id: shellcheck
+        files: ^scripts/.*\.sh$
