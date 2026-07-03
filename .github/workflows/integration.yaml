@@ -18,7 +18,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Create mock octorules binary
         env:
@@ -84,7 +84,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Create mock octorules that exits 2
         env:
@@ -145,7 +145,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Create mock octorules with lint errors
         env:
@@ -206,7 +206,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Create mock octorules with audit findings
         env:
@@ -271,7 +271,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Create mock octorules with audit warnings
         env:
@@ -347,7 +347,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Create mock octorules binary
         env:
