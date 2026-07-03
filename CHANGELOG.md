@@ -5,11 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.8.6] - 2026-07-03
 
 ### Changed
-- `run.sh` matches the plan checksum as exactly 64 hex characters
-  (SHA-256), the only form octorules emits.
+- Plan checksums are matched strictly as 64 hex characters (SHA-256).
 
 ## [1.8.5] - 2026-04-14
 
